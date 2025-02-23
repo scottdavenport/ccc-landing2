@@ -3,8 +3,22 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
+// Define types for our environment variables
+type ClientEnvVars = {
+  SUPABASE_URL: string | undefined;
+  SUPABASE_KEY: string | undefined;
+  SUPABASE_BRANCH: string | undefined;
+  VERCEL_ENV: string | undefined;
+  VERCEL_GIT_COMMIT_REF: string | undefined;
+  NODE_ENV: string | undefined;
+};
+
+type EnvVarMapping = {
+  [key: string]: keyof ClientEnvVars;
+};
+
 // These variables are available at build time and runtime on the client
-const clientEnvVars = {
+const clientEnvVars: ClientEnvVars = {
   SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   SUPABASE_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   SUPABASE_BRANCH: process.env.NEXT_PUBLIC_SUPABASE_BRANCH,
@@ -58,7 +72,7 @@ export function SupabaseTest() {
       ];
       
       // Map environment variables to our client-safe object keys
-      const envVarMapping = {
+      const envVarMapping: EnvVarMapping = {
         'NEXT_PUBLIC_SUPABASE_URL': 'SUPABASE_URL',
         'NEXT_PUBLIC_SUPABASE_ANON_KEY': 'SUPABASE_KEY'
       };
