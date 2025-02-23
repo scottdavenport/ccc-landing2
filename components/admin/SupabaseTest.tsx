@@ -24,9 +24,18 @@ export function SupabaseTest() {
         'NEXT_PUBLIC_SUPABASE_ANON_KEY'
       ];
       
-      const missingEnvVars = requiredEnvVars.filter(
-        envVar => !process.env[envVar]
-      );
+      const envVarStatus = requiredEnvVars.map(envVar => ({
+        name: envVar,
+        exists: typeof process.env[envVar] !== 'undefined',
+        value: process.env[envVar] ? `${process.env[envVar]?.substring(0, 8)}...` : undefined
+      }));
+
+      const missingEnvVars = envVarStatus.filter(env => !env.exists).map(env => env.name);
+      
+      console.log('Environment Variables Status:', envVarStatus);
+      console.log('Current Branch:', process.env.NEXT_PUBLIC_SUPABASE_BRANCH);
+      console.log('Vercel Environment:', process.env.VERCEL_ENV);
+      console.log('Git Branch:', process.env.VERCEL_GIT_COMMIT_REF);
 
       if (missingEnvVars.length > 0) {
         setStatus({
