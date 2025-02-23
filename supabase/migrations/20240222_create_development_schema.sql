@@ -1,4 +1,5 @@
--- Create development schema
+-- Initial migration: Create development schema and set up permissions
+-- This creates a separate schema for development and preview environments
 CREATE SCHEMA IF NOT EXISTS development;
 
 -- Grant necessary permissions
