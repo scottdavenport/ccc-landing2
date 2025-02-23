@@ -93,8 +93,59 @@ cloudinary.config({
 - [ ] Test with very large image files
 
 ## Environment Variables
-Required variables in `.env.development` and `.env.local`:
+Required variables in `.env.development`, `.env.preview`, and `.env.production`:
 ```
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_upload_preset
+```
+
+## Type Definitions
+
+```typescript
+// Return type for image uploads
+interface UploadResult {
+  url: string;      // The secure URL of the uploaded image
+  publicId: string; // The Cloudinary public ID for the image
+}
+
+// Internal Cloudinary response type
+interface CloudinaryResponse {
+  secure_url: string;
+  public_id: string;
+  error?: {
+    message: string;
+  };
+}
+```
+
+## API Functions
+
+### uploadImage
+Uploads an image file to Cloudinary using the configured upload preset.
+
+```typescript
+const uploadImage = async (file: File): Promise<UploadResult>
+```
+
+### verifyConfiguration
+Verifies that the Cloudinary configuration is valid by attempting to ping the API.
+
+```typescript
+const verifyConfiguration = async (): Promise<boolean>
+```
+
+## Error Handling
+The integration now includes comprehensive error handling:
+
+1. Environment variable validation at startup
+2. HTTP error detection during upload
+3. Cloudinary-specific error message parsing
+4. Type-safe error propagation
+
+## Security Considerations
+1. All uploads use HTTPS (secure: true)
+2. Upload presets are used instead of API secrets in client-side code
+3. Environment variables are properly segregated between client and server
+4. Error messages are sanitized before display
