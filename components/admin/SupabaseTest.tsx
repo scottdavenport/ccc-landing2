@@ -18,7 +18,7 @@ export function SupabaseTest() {
     async function testConnection() {
       try {
         // Test basic connection
-        const { data, error } = await supabase.from('_prisma_migrations').select('*').limit(1);
+        const { error } = await supabase.from('sponsors').select('*').limit(1);
         if (error) throw error;
 
         // Get current branch
