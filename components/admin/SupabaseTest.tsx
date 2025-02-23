@@ -3,6 +3,14 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
+// Log environment variables at build time
+console.log('Build-time environment:', {
+  VERCEL_ENV: process.env.VERCEL_ENV,
+  BRANCH: process.env.NEXT_PUBLIC_SUPABASE_BRANCH,
+  HAS_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+  HAS_KEY: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+});
+
 export function SupabaseTest() {
   const [status, setStatus] = useState<{
     connection: string;
