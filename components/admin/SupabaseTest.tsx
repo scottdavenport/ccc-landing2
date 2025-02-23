@@ -36,6 +36,16 @@ export function SupabaseTest() {
       const vercelEnv = process.env.VERCEL_ENV || 'local';
       const gitRef = process.env.VERCEL_GIT_COMMIT_REF || 'unknown';
       const environment = process.env.NODE_ENV || 'development';
+      
+      // Determine branch based on environment
+      let branch;
+      if (vercelEnv === 'production') {
+        branch = 'main';
+      } else if (vercelEnv === 'preview') {
+        branch = gitRef || 'preview';
+      } else {
+        branch = process.env.NEXT_PUBLIC_SUPABASE_BRANCH || 'development';
+      }
 
       // Check for required environment variables
       const requiredEnvVars = [
@@ -77,8 +87,7 @@ export function SupabaseTest() {
         const { error } = await supabase.from('sponsors').select('*').limit(1);
         if (error) throw error;
 
-        // Get current branch
-        const branch = process.env.NEXT_PUBLIC_SUPABASE_BRANCH || 'main';
+        // Branch was determined above
 
         setStatus({
           connection: 'Connected successfully!',
