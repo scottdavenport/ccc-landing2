@@ -17,15 +17,26 @@ export function SupabaseTest() {
     branch: string | null;
     error: string | null;
     missingEnvVars: string[];
+    environment: string | null;
+    vercelEnv: string | null;
+    gitRef: string | null;
   }>({
     connection: 'Testing...',
     branch: null,
     error: null,
-    missingEnvVars: []
+    missingEnvVars: [],
+    environment: null,
+    vercelEnv: null,
+    gitRef: null
   });
 
   useEffect(() => {
     async function testConnection() {
+      // Get environment information
+      const vercelEnv = process.env.VERCEL_ENV || 'local';
+      const gitRef = process.env.VERCEL_GIT_COMMIT_REF || 'unknown';
+      const environment = process.env.NODE_ENV || 'development';
+
       // Check for required environment variables
       const requiredEnvVars = [
         'NEXT_PUBLIC_SUPABASE_URL',
@@ -40,17 +51,23 @@ export function SupabaseTest() {
 
       const missingEnvVars = envVarStatus.filter(env => !env.exists).map(env => env.name);
       
-      console.log('Environment Variables Status:', envVarStatus);
-      console.log('Current Branch:', process.env.NEXT_PUBLIC_SUPABASE_BRANCH);
-      console.log('Vercel Environment:', process.env.VERCEL_ENV);
-      console.log('Git Branch:', process.env.VERCEL_GIT_COMMIT_REF);
+      console.log('Debug Info:', {
+        envVarStatus,
+        vercelEnv,
+        gitRef,
+        environment,
+        branch: process.env.NEXT_PUBLIC_SUPABASE_BRANCH
+      });
 
       if (missingEnvVars.length > 0) {
         setStatus({
           connection: 'Configuration Error',
           branch: process.env.NEXT_PUBLIC_SUPABASE_BRANCH || null,
           error: 'Missing required environment variables',
-          missingEnvVars
+          missingEnvVars,
+          environment,
+          vercelEnv,
+          gitRef
         });
         return;
       }
@@ -67,7 +84,10 @@ export function SupabaseTest() {
           connection: 'Connected successfully!',
           branch,
           error: null,
-          missingEnvVars: []
+          missingEnvVars: [],
+          environment,
+          vercelEnv,
+          gitRef
         });
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
@@ -75,7 +95,10 @@ export function SupabaseTest() {
           connection: 'Failed to connect',
           branch: process.env.NEXT_PUBLIC_SUPABASE_BRANCH || null,
           error: errorMessage,
-          missingEnvVars: []
+          missingEnvVars: [],
+          environment,
+          vercelEnv,
+          gitRef
         });
       }
     }
@@ -136,6 +159,14 @@ export function SupabaseTest() {
                 {status.error && !status.missingEnvVars.length && (
                   <div className="mt-2 text-sm text-red-700">
                     <p>Error details: {status.error}</p>
+                    <p className="mt-2">
+                      Environment Information:
+                    </p>
+                    <ul className="list-disc list-inside mt-1">
+                      <li>Node Environment: {status.environment}</li>
+                      <li>Vercel Environment: {status.vercelEnv}</li>
+                      <li>Git Reference: {status.gitRef}</li>
+                    </ul>
                     <p className="mt-2">
                       Please verify your Supabase configuration and ensure your database
                       is accessible from this environment.
