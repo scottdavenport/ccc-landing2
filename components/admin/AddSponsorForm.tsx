@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/database.types';
+import { CloudinaryStatus } from './CloudinaryStatus';
+
 
 type SponsorLevel = Database['api']['Tables']['sponsor_levels']['Row'];
 
@@ -25,6 +27,8 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [uploadProgress] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -58,23 +62,64 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, []); // Empty dependency array since we only want this to run once
+  }, []);
 
-  // Create a default sponsor level if none exist
-  const createDefaultSponsorLevel = async () => {
-    const { error: createLevelError } = await supabase
-      .from('sponsor_levels')
-      .insert([{ 
-        id: '00000000-0000-0000-0000-000000000001',
-        name: 'Gold'
-      }]);
-
-    if (createLevelError) {
-      console.error('Error creating default sponsor level:', createLevelError);
-      throw new Error('Failed to create default sponsor level');
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setLogoFile(e.target.files[0]);
+      setError(null);
     }
+  };
 
-    return '00000000-0000-0000-0000-000000000001';
+  const uploadToCloudinary = async (file: File): Promise<{ public_id: string; secure_url: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || '');
+
+    try {
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Failed to upload image to Cloudinary');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Cloudinary upload error:', error);
+      throw new Error(
+        error instanceof Error ? error.message : 'Failed to upload image to Cloudinary'
+      );
+    }
+  };
+
+  const deleteFromCloudinary = async (publicId: string) => {
+    try {
+      const timestamp = new Date().getTime();
+      const signature = await fetch('/api/cloudinary/signature', {
+        method: 'POST',
+        body: JSON.stringify({ publicId, timestamp }),
+      }).then(res => res.json());
+
+      await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/destroy`, {
+        method: 'POST',
+        body: JSON.stringify({
+          public_id: publicId,
+          signature: signature.signature,
+          api_key: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY,
+          timestamp,
+        }),
+      });
+    } catch (error) {
+      console.error('Error deleting image from Cloudinary:', error);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,55 +128,59 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
     setError(null);
     setSuccess(false);
 
+    let cloudinaryData = null;
+
     try {
-      // First check if we have any sponsor levels
-      const { data: levels, error: levelsError } = await supabase
-        .from('sponsor_levels')
-        .select('*');
-
-      if (levelsError) {
-        console.error('Error fetching sponsor levels:', levelsError);
-        throw new Error('Failed to check sponsor levels');
+      // Step 1: Upload logo to Cloudinary if provided
+      if (logoFile) {
+        cloudinaryData = await uploadToCloudinary(logoFile);
       }
 
-      let levelId = selectedLevel;
-      
-      if (!levels || levels.length === 0) {
-        // Create a default sponsor level if none exist
-        levelId = await createDefaultSponsorLevel();
-      }
-
-      // Now create the sponsor
-      const { error: createSponsorError } = await supabase
+      // Step 2: Insert sponsor into Supabase
+      const { error: sponsorError } = await supabase
         .from('sponsors')
-        .insert([{ 
-          name,
-          level: levelId,
-          year: new Date().getFullYear() // Current year as default
-        }]);
+        .insert([
+          {
+            name,
+            level: selectedLevel,
+            year: new Date().getFullYear(),
+            cloudinary_public_id: cloudinaryData?.public_id,
+            image_url: cloudinaryData?.secure_url,
+          },
+        ])
+        .select()
+        .single();
 
-      if (createSponsorError) {
-        console.error('Error creating sponsor:', createSponsorError);
-        throw createSponsorError;
+      if (sponsorError) {
+        // Rollback: Delete from Cloudinary if Supabase insert fails
+        if (cloudinaryData) {
+          await deleteFromCloudinary(cloudinaryData.public_id);
+        }
+        throw sponsorError;
       }
 
       setSuccess(true);
       setName('');
-      onSponsorAdded?.();
+      setLogoFile(null);
+      if (onSponsorAdded) {
+        onSponsorAdded();
+      }
     } catch (err) {
-      console.error('Error in form submission:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'An error occurred while adding the sponsor');
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
   return (
     <div className="glass-card p-6 rounded-lg shadow-lg">
+      <div className="flex items-center space-x-4 mb-6">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-gray-500">Status:</span>
+          <CloudinaryStatus />
+        </div>
+      </div>
+
       {error && (
         <div className="mb-6 p-4 bg-destructive/10 text-destructive rounded-lg">
           {error}
@@ -191,6 +240,37 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
               </div>
             )}
           </div>
+
+          <div>
+            <label
+              htmlFor="logo"
+              className="block text-sm font-medium text-foreground mb-1"
+            >
+              Sponsor Logo
+            </label>
+            <input
+              type="file"
+              id="logo"
+              accept="image/*"
+              onChange={handleLogoChange}
+              className="mt-1 block w-full text-sm text-gray-500
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-md file:border-0
+                file:text-sm file:font-semibold
+                file:bg-primary file:text-white
+                hover:file:bg-primary/90"
+            />
+            {uploadProgress > 0 && uploadProgress < 100 && (
+              <div className="mt-2">
+                <div className="h-2 bg-gray-200 rounded-full">
+                  <div
+                    className="h-2 bg-primary rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <button
@@ -198,7 +278,7 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
           disabled={isLoading}
           className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors disabled:opacity-50"
         >
-          {isLoading ? 'Adding...' : 'Add Sponsor'}
+          {isLoading ? <LoadingSpinner /> : 'Add Sponsor'}
         </button>
       </form>
     </div>
