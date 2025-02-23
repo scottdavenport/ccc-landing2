@@ -1,3 +1,12 @@
+-- Reset migrations
+DELETE FROM supabase_migrations.schema_migrations WHERE version IN (
+    '20240223_create_api_schema',
+    '20240223_fix_schema_migrations',
+    '20240223_add_default_sponsor_level',
+    '20240223_001_fix_schema_migrations',
+    '20240223_002_create_sponsors'
+);
+
 -- Create API schema and set up permissions
 CREATE SCHEMA IF NOT EXISTS api;
 
