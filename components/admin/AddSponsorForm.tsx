@@ -1,13 +1,38 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { Database } from '@/lib/supabase/database.types';
+
+type SponsorLevel = Database['api']['Tables']['sponsor_levels']['Row'];
 
 export function AddSponsorForm() {
   const [name, setName] = useState('');
+  const [levels, setLevels] = useState<SponsorLevel[]>([]);
+  const [selectedLevel, setSelectedLevel] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    async function fetchSponsorLevels() {
+      const { data, error } = await supabase
+        .from('sponsor_levels')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching sponsor levels:', error);
+        return;
+      }
+
+      setLevels(data);
+      if (data.length > 0) {
+        setSelectedLevel(data[0].id);
+      }
+    }
+
+    fetchSponsorLevels();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +43,11 @@ export function AddSponsorForm() {
     try {
       const { error } = await supabase
         .from('sponsors')
-        .insert([{ name }]);
+        .insert([{ 
+          name,
+          level: selectedLevel,
+          year: new Date().getFullYear() // Current year as default
+        }]);
 
       if (error) throw error;
 
@@ -33,23 +62,49 @@ export function AddSponsorForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label
-          htmlFor="sponsorName"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Sponsor Name
-        </label>
-        <div className="mt-1">
-          <input
-            type="text"
-            id="sponsorName"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            placeholder="Enter sponsor name"
-            required
-          />
+      <div className="space-y-4">
+        <div>
+          <label
+            htmlFor="sponsorName"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Sponsor Name
+          </label>
+          <div className="mt-1">
+            <input
+              type="text"
+              id="sponsorName"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="Enter sponsor name"
+              required
+            />
+          </div>
+        </div>
+
+        <div>
+          <label
+            htmlFor="sponsorLevel"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Sponsor Level
+          </label>
+          <div className="mt-1">
+            <select
+              id="sponsorLevel"
+              value={selectedLevel}
+              onChange={(e) => setSelectedLevel(e.target.value)}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              required
+            >
+              {levels.map((level) => (
+                <option key={level.id} value={level.id}>
+                  {level.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
