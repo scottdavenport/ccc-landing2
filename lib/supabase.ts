@@ -7,17 +7,8 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const vercelEnv = process.env.NEXT_PUBLIC_VERCEL_ENV;
 const gitRef = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF;
 
-// Determine schema based on environment
-let schema: string;
-if (vercelEnv === 'production') {
-  schema = 'public'; // Use public schema for production
-} else if (vercelEnv === 'preview') {
-  // For preview deployments, use a development schema
-  schema = 'development';
-} else {
-  // For local development, use development schema
-  schema = 'development';
-}
+// Use api schema for all environments
+const schema = 'api';
 
 console.log('Supabase Client Config:', {
   url: supabaseUrl,
