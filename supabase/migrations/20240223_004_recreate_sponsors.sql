@@ -1,20 +1,6 @@
--- Reset migrations
-DELETE FROM supabase_migrations.schema_migrations WHERE version IN (
-    '20240223_create_api_schema',
-    '20240223_fix_schema_migrations',
-    '20240223_add_default_sponsor_level',
-    '20240223_001_fix_schema_migrations',
-    '20240223_002_create_sponsors'
-);
-
--- Create API schema and set up permissions
-CREATE SCHEMA IF NOT EXISTS api;
-
--- Grant necessary permissions
-GRANT USAGE ON SCHEMA api TO authenticated, anon, service_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA api GRANT ALL ON TABLES TO authenticated, anon, service_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA api GRANT ALL ON FUNCTIONS TO authenticated, anon, service_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA api GRANT ALL ON SEQUENCES TO authenticated, anon, service_role;
+-- Drop existing tables if they exist
+DROP TABLE IF EXISTS api.sponsors CASCADE;
+DROP TABLE IF EXISTS api.sponsor_levels CASCADE;
 
 -- Create sponsor_levels table first (referenced by sponsors)
 CREATE TABLE api.sponsor_levels (
@@ -39,6 +25,16 @@ CREATE TABLE api.sponsors (
 -- Enable Row Level Security (RLS)
 ALTER TABLE api.sponsors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE api.sponsor_levels ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Enable read access for all users" ON api.sponsors;
+DROP POLICY IF EXISTS "Enable read access for all users" ON api.sponsor_levels;
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON api.sponsors;
+DROP POLICY IF EXISTS "Enable update for authenticated users only" ON api.sponsors;
+DROP POLICY IF EXISTS "Enable delete for authenticated users only" ON api.sponsors;
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON api.sponsor_levels;
+DROP POLICY IF EXISTS "Enable update for authenticated users only" ON api.sponsor_levels;
+DROP POLICY IF EXISTS "Enable delete for authenticated users only" ON api.sponsor_levels;
 
 -- Create policies
 CREATE POLICY "Enable read access for all users" ON api.sponsors
