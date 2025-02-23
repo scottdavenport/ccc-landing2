@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/database.types';
 
 type SponsorLevel = Database['api']['Tables']['sponsor_levels']['Row'];

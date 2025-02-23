@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { AddSponsorForm } from '@/components/admin/AddSponsorForm';
 import { SponsorsTable } from '@/components/admin/SponsorsTable';
-import { SupabaseTestUI } from '@/components/admin/SupabaseTestUI';
+
 
 export default function AdminPage() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -55,17 +55,6 @@ export default function AdminPage() {
           </div>
         </div>
       </div>
-
-      {/* Supabase Connection Test */}
-      <SupabaseTestUI status={{
-        connection: 'Connected',
-        branch: null,
-        error: null,
-        missingEnvVars: [],
-        environment: 'development',
-        vercelEnv: null,
-        gitRef: null
-      }} />
 
       {/* Sponsor Management */}
       <div className="space-y-6">
