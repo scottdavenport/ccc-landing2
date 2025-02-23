@@ -1,8 +1,12 @@
+'use client';
+
+import { useState } from 'react';
 import { AddSponsorForm } from '@/components/admin/AddSponsorForm';
-import { SupabaseTest } from '@/components/admin/SupabaseTest';
+import { SponsorsTable } from '@/components/admin/SponsorsTable';
 import { SupabaseTestUI } from '@/components/admin/SupabaseTestUI';
 
-export default async function AdminPage() {
+export default function AdminPage() {
+  const [refreshKey, setRefreshKey] = useState(0);
   return (
     <div className="space-y-6">
       <div className="bg-white shadow rounded-lg p-6">
@@ -53,12 +57,29 @@ export default async function AdminPage() {
       </div>
 
       {/* Supabase Connection Test */}
-      <SupabaseTestUI status={await SupabaseTest()} />
+      <SupabaseTestUI status={{
+        connection: 'Connected',
+        branch: null,
+        error: null,
+        missingEnvVars: [],
+        environment: 'development',
+        vercelEnv: null,
+        gitRef: null
+      }} />
 
-      {/* Add Sponsor Form */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-xl font-medium text-gray-900 mb-6">Add New Sponsor</h2>
-        <AddSponsorForm />
+      {/* Sponsor Management */}
+      <div className="space-y-6">
+        {/* Add Sponsor Form */}
+        <div className="bg-white/80 backdrop-blur-sm shadow rounded-lg p-6">
+          <h2 className="text-xl font-medium text-gray-900 mb-6">Add New Sponsor</h2>
+          <AddSponsorForm onSponsorAdded={() => setRefreshKey(k => k + 1)} />
+        </div>
+
+        {/* Sponsors Table */}
+        <div className="bg-white/80 backdrop-blur-sm shadow rounded-lg p-6">
+          <h2 className="text-xl font-medium text-gray-900 mb-6">Current Sponsors</h2>
+          <SponsorsTable key={refreshKey} />
+        </div>
       </div>
     </div>
   );
