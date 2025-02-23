@@ -10,6 +10,7 @@ A modern, responsive landing page built with Next.js 14, TypeScript, and Tailwin
 - ✅ Added sponsor management system with CRUD operations
 - ✅ Added comprehensive documentation
 - ✅ Implemented code formatting with Prettier
+- ✅ Set up local Supabase development environment with migration workflows
 
 ### Coming Soon
 - Dynamic sponsor carousel integration
@@ -18,11 +19,27 @@ A modern, responsive landing page built with Next.js 14, TypeScript, and Tailwin
 
 ## Tech Stack
 - **Frontend**: Next.js 14, TypeScript, Tailwind CSS
-- **Backend**: Supabase
+- **Backend**: Supabase (with local development support)
 - **Database**: PostgreSQL (via Supabase)
 - **Deployment**: Vercel
 
 This project uses Next.js and was bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Local Development
+
+### Prerequisites
+- Docker Desktop
+- Supabase CLI (`brew install supabase/tap/supabase`)
+- Node.js and npm/yarn
+
+### Setting Up Local Environment
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Start local Supabase: `supabase start`
+4. Copy `.env.example` to `.env.local` and update with local Supabase credentials
+5. Run the development server: `npm run dev`
+
+For detailed instructions on database migrations and local Supabase development, see [Local Supabase Development Guide](docs/local-supabase-dev.md)
 
 ## Development Setup
 
