@@ -57,10 +57,16 @@ export function SupabaseTest() {
         'NEXT_PUBLIC_SUPABASE_ANON_KEY'
       ];
       
+      // Map environment variables to our client-safe object keys
+      const envVarMapping = {
+        'NEXT_PUBLIC_SUPABASE_URL': 'SUPABASE_URL',
+        'NEXT_PUBLIC_SUPABASE_ANON_KEY': 'SUPABASE_KEY'
+      };
+
       const envVarStatus = requiredEnvVars.map(envVar => ({
         name: envVar,
-        exists: typeof process.env[envVar] !== 'undefined',
-        value: process.env[envVar] ? `${process.env[envVar]?.substring(0, 8)}...` : undefined
+        exists: !!clientEnvVars[envVarMapping[envVar]],
+        value: clientEnvVars[envVarMapping[envVar]] ? `${clientEnvVars[envVarMapping[envVar]]?.substring(0, 8)}...` : undefined
       }));
 
       const missingEnvVars = envVarStatus.filter(env => !env.exists).map(env => env.name);
@@ -70,13 +76,13 @@ export function SupabaseTest() {
         vercelEnv,
         gitRef,
         environment,
-        branch: process.env.NEXT_PUBLIC_SUPABASE_BRANCH
+        branch: clientEnvVars.SUPABASE_BRANCH
       });
 
       if (missingEnvVars.length > 0) {
         setStatus({
           connection: 'Configuration Error',
-          branch: process.env.NEXT_PUBLIC_SUPABASE_BRANCH || null,
+          branch: clientEnvVars.SUPABASE_BRANCH || null,
           error: 'Missing required environment variables',
           missingEnvVars,
           environment,
