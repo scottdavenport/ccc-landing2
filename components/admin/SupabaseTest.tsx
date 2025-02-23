@@ -3,13 +3,17 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
-// Log environment variables at build time
-console.log('Build-time environment:', {
-  VERCEL_ENV: process.env.VERCEL_ENV,
-  BRANCH: process.env.NEXT_PUBLIC_SUPABASE_BRANCH,
-  HAS_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-  HAS_KEY: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-});
+// These variables are available at build time and runtime on the client
+const clientEnvVars = {
+  SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  SUPABASE_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  SUPABASE_BRANCH: process.env.NEXT_PUBLIC_SUPABASE_BRANCH,
+  VERCEL_ENV: process.env.NEXT_PUBLIC_VERCEL_ENV,
+  VERCEL_GIT_COMMIT_REF: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF,
+  NODE_ENV: process.env.NODE_ENV
+};
+
+console.log('Client environment:', clientEnvVars);
 
 export function SupabaseTest() {
   const [status, setStatus] = useState<{
@@ -32,10 +36,10 @@ export function SupabaseTest() {
 
   useEffect(() => {
     async function testConnection() {
-      // Get environment information
-      const vercelEnv = process.env.VERCEL_ENV || 'local';
-      const gitRef = process.env.VERCEL_GIT_COMMIT_REF || 'unknown';
-      const environment = process.env.NODE_ENV || 'development';
+      // Get environment information from client-side accessible vars
+      const vercelEnv = clientEnvVars.VERCEL_ENV || 'local';
+      const gitRef = clientEnvVars.VERCEL_GIT_COMMIT_REF || 'unknown';
+      const environment = clientEnvVars.NODE_ENV || 'development';
       
       // Determine branch based on environment
       let branch;
@@ -44,7 +48,7 @@ export function SupabaseTest() {
       } else if (vercelEnv === 'preview') {
         branch = gitRef || 'preview';
       } else {
-        branch = process.env.NEXT_PUBLIC_SUPABASE_BRANCH || 'development';
+        branch = clientEnvVars.SUPABASE_BRANCH || 'development';
       }
 
       // Check for required environment variables
