@@ -6,8 +6,10 @@ A modern, responsive landing page built with Next.js 14, TypeScript, and Tailwin
 
 ### Recent Updates
 - ✅ Integrated Supabase for database management
-- ✅ Implemented admin dashboard
+- ✅ Implemented admin dashboard with real-time connection status
 - ✅ Added sponsor management system with CRUD operations
+- ✅ Added comprehensive documentation
+- ✅ Implemented code formatting with Prettier
 
 ### Coming Soon
 - Dynamic sponsor carousel integration
@@ -22,9 +24,15 @@ A modern, responsive landing page built with Next.js 14, TypeScript, and Tailwin
 
 This project uses Next.js and was bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+## Development Setup
 
-First, run the development server:
+1. Clone the repository
+2. Copy `.env.example` to `.env.local` and fill in your Supabase credentials
+3. Install dependencies:
+   ```bash
+   npm install
+   ```
+4. Run the development server:
 
 ```bash
 npm run dev
