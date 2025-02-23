@@ -1,3 +1,6 @@
+-- Create api schema if it doesn't exist
+CREATE SCHEMA IF NOT EXISTS api;
+
 -- Drop existing tables if they exist
 DROP TABLE IF EXISTS api.sponsors CASCADE;
 DROP TABLE IF EXISTS api.sponsor_levels CASCADE;
