@@ -1,9 +1,9 @@
 1. Database Integration & Sponsor Management
-[] Set up simple Supabase table for adding a sponsor name
-[] Create a simple form to add a sponsor, just a name to start to make sure we can write to supabase
-[] Set up Supabase tables for sponsors and events
-[] Connect admin dashboard to real data
-[] Create CRUD operations for sponsors in admin panel
+[x] Set up simple Supabase table for adding a sponsor name
+[x] Create a simple form to add a sponsor, just a name to start to make sure we can write to supabase
+[x] Set up Supabase tables for sponsors and events
+[x] Connect admin dashboard to real data
+[x] Create CRUD operations for sponsors in admin panel
 [] Make sponsor carousel dynamic with real data
 
 2. Authentication & Authorization

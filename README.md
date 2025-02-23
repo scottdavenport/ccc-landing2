@@ -2,6 +2,24 @@
 
 A modern, responsive landing page built with Next.js 14, TypeScript, and Tailwind CSS. Features a dynamic sponsor carousel, smooth animations, and a clean, professional design.
 
+## Project Status
+
+### Recent Updates
+- ✅ Integrated Supabase for database management
+- ✅ Implemented admin dashboard
+- ✅ Added sponsor management system with CRUD operations
+
+### Coming Soon
+- Dynamic sponsor carousel integration
+- Authentication and authorization system
+- Event management features
+
+## Tech Stack
+- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
+- **Backend**: Supabase
+- **Database**: PostgreSQL (via Supabase)
+- **Deployment**: Vercel
+
 This project uses Next.js and was bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
