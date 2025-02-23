@@ -12,6 +12,9 @@ export async function GET() {
 
     // Test connection by trying to get account details
     const result = await cloudinary.api.ping();
+    if (result.status !== 'ok') {
+      throw new Error('Cloudinary connection test failed');
+    }
     
     return NextResponse.json({ status: 'connected' });
   } catch (error) {
