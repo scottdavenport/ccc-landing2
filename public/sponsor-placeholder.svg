@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="225" viewBox="0 0 400 225" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="225" rx="8" fill="#F5F5F5"/>
+  
+  <!-- Logo placeholder -->
+  <rect x="120" y="52.5" width="160" height="120" rx="4" fill="#E5E5E5"/>
+  
+  <!-- Building blocks suggesting a logo -->
+  <rect x="150" y="82.5" width="40" height="40" rx="4" fill="#5BBFCE"/>
+  <rect x="210" y="82.5" width="40" height="40" rx="4" fill="#7CC7D3"/>
+  <rect x="180" y="102.5" width="40" height="40" rx="4" fill="#3B8A96"/>
+  
+  <!-- "Your Logo Here" text -->
+  <text x="200" y="175" font-family="Arial" font-size="14" fill="#4A4A4A" text-anchor="middle">Your Logo Here</text>
+</svg>
