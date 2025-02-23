@@ -41,19 +41,52 @@ export function AddSponsorForm() {
     setSuccess(false);
 
     try {
-      const { error } = await supabase
+      // First check if we have any sponsor levels
+      const { data: levels, error: levelsError } = await supabase
+        .from('sponsor_levels')
+        .select('*');
+
+      if (levelsError) {
+        console.error('Error fetching sponsor levels:', levelsError);
+        throw new Error('Failed to check sponsor levels');
+      }
+
+      if (!levels || levels.length === 0) {
+        // Create a default sponsor level if none exist
+        const { error: createLevelError } = await supabase
+          .from('sponsor_levels')
+          .insert([{ 
+            id: '00000000-0000-0000-0000-000000000001',
+            name: 'Gold'
+          }]);
+
+        if (createLevelError) {
+          console.error('Error creating default sponsor level:', createLevelError);
+          throw new Error('Failed to create default sponsor level');
+        }
+
+        // Use the default level ID
+        setSelectedLevel('00000000-0000-0000-0000-000000000001');
+      }
+
+      // Now create the sponsor
+      const { error: createSponsorError } = await supabase
         .from('sponsors')
         .insert([{ 
           name,
-          level: selectedLevel,
+          level: selectedLevel || '00000000-0000-0000-0000-000000000001',
           year: new Date().getFullYear() // Current year as default
         }]);
 
-      if (error) throw error;
+      if (createSponsorError) {
+        console.error('Error creating sponsor:', createSponsorError);
+        throw createSponsorError;
+      }
 
       setSuccess(true);
       setName('');
     } catch (err) {
+      console.error('Error in form submission:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsLoading(false);
