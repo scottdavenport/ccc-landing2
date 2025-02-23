@@ -2,7 +2,9 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase } from './supabase';
+import { createClient } from './supabase-auth';
+
+const supabase = createClient();
 
 type AuthContextType = {
   user: User | null;
@@ -39,11 +41,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
+    console.log('Auth Provider: Attempting sign in...');
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        console.error('Auth Provider: Sign in error:', error);
+        throw error;
+      }
+      
+      console.log('Auth Provider: Sign in successful', data.user?.id);
+    } catch (err) {
+      console.error('Auth Provider: Unexpected error during sign in:', err);
+      throw err;
+    }
   };
 
   const signOut = async () => {
