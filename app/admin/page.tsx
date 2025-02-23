@@ -1,7 +1,8 @@
 import { AddSponsorForm } from '@/components/admin/AddSponsorForm';
 import { SupabaseTest } from '@/components/admin/SupabaseTest';
+import { SupabaseTestUI } from '@/components/admin/SupabaseTestUI';
 
-export default function AdminPage() {
+export default async function AdminPage() {
   return (
     <div className="space-y-6">
       <div className="bg-white shadow rounded-lg p-6">
@@ -52,7 +53,7 @@ export default function AdminPage() {
       </div>
 
       {/* Supabase Connection Test */}
-      <SupabaseTest />
+      <SupabaseTestUI status={await SupabaseTest()} />
 
       {/* Add Sponsor Form */}
       <div className="bg-white shadow rounded-lg p-6">
