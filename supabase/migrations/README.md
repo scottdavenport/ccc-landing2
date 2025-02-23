@@ -31,6 +31,7 @@ The workflow is defined in `.github/workflows/supabase-deploy.yml`.
 The following secrets must be set in your GitHub repository:
 - `SUPABASE_ACCESS_TOKEN`: Your Supabase access token
 - `SUPABASE_PROJECT_ID`: Your Supabase project ID
+- `SUPABASE_DB_PASSWORD`: Your Supabase database password
 
 ## Local Development
 
