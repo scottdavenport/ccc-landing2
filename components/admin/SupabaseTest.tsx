@@ -1,9 +1,5 @@
-'use server';
 
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-
-type ConnectionStatus = {
+export type ConnectionStatus = {
   connection: string;
   branch: string | null;
   error: string | null;
@@ -20,64 +16,112 @@ async function getSupabaseConfig() {
   const gitRef = process.env.VERCEL_GIT_COMMIT_REF || 'unknown';
   const environment = process.env.NODE_ENV || 'development';
   
-  // Determine schema based on environment
-  let schema: string;
-  if (vercelEnv === 'production') {
-    schema = 'public';
-  } else if (vercelEnv === 'preview') {
-    schema = 'development';
-  } else {
-    schema = 'development';
-  }
+  // Use the api schema as required by the server
+  const schema = 'api';
 
   return {
     vercelEnv,
     gitRef,
     environment,
     schema,
-    url: process.env.SUPABASE_URL,
-    key: process.env.SUPABASE_ANON_KEY
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   };
 }
 
-export async function SupabaseTest() {
+export async function SupabaseTest(): Promise<ConnectionStatus> {
+  console.log('Environment check:', {
+    hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    nodeEnv: process.env.NODE_ENV,
+    vercelEnv: process.env.VERCEL_ENV
+  });
+
   const config = await getSupabaseConfig();
   
+  // Check for missing environment variables
+  const missingEnvVars: string[] = [];
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) missingEnvVars.push('NEXT_PUBLIC_SUPABASE_URL');
+  if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) missingEnvVars.push('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+
   // Initialize status
   const status: ConnectionStatus = {
-    connection: 'Connected',
+    connection: missingEnvVars.length > 0 ? 'Missing environment variables' : 'Connected',
     branch: config.schema,
-    error: null,
-    missingEnvVars: [],
+    error: missingEnvVars.length > 0 ? `Missing required environment variables: ${missingEnvVars.join(', ')}` : null,
+    missingEnvVars,
     environment: config.environment,
     vercelEnv: config.vercelEnv,
     gitRef: config.gitRef
   };
 
-  try {
-    // Create Supabase client with server-side config
-    const supabase = createServerComponentClient({ cookies });
-    
-    // Test the connection
-    const { error } = await supabase.from('sponsors').select('*').limit(1);
+  // Return early if missing environment variables
+  if (missingEnvVars.length > 0) {
+    return status;
+  }
 
-    if (error) {
-      return {
-        ...status,
-        connection: 'Failed to connect',
-        error: error.message
-      };
+  try {
+    console.log('Starting Supabase connection test...');
+    
+    // Test connection using REST API directly
+    const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/sponsors?select=id&limit=1`;
+    console.log('Testing URL:', url);
+    
+    const response = await fetch(url, {
+      headers: {
+        'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+        'Accept-Profile': 'api',
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    console.log('Response status:', response.status);
+    console.log('Response headers:', {
+      contentType: response.headers.get('content-type'),
+      profile: response.headers.get('profile'),
+      error: response.headers.get('x-error')
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
+      
+      // Update status with error information
+      status.error = errorText;
+      status.connection = 'Failed';
+      
+      // If it's a schema error, provide more helpful information
+      if (errorText.includes('schema')) {
+        status.error = `Schema error: The current schema is '${config.schema}'. Please ensure your database has the required tables in this schema.`;
+      }
+      
+      return status;
+    }
+    
+    const data = await response.json();
+    console.log('Response data:', data);
+
+    // Update status for successful connection
+    return {
+      ...status,
+      connection: 'Connected',
+      error: null
+    };
+  } catch (error) {
+    let errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    
+    // Check for specific schema-related errors
+    if (errorMessage.includes('schema')) {
+      errorMessage = 'Schema error: Please ensure you are using the correct schema. The schema must be: api';
     }
 
-    return status;
-  } catch (error) {
     return {
       ...status,
       connection: 'Failed to connect',
-      error: error instanceof Error ? error.message : 'An unknown error occurred'
+      error: errorMessage
     };
   }
-
 }
 // UI Component to display the connection status
 export default function SupabaseTestUI({ status }: { status: ConnectionStatus }) {
@@ -87,15 +131,24 @@ export default function SupabaseTestUI({ status }: { status: ConnectionStatus })
       <dl className="mt-4 grid grid-cols-1 gap-4">
         <div>
           <dt className="text-sm font-medium text-gray-500">Connection Status</dt>
-          <dd className={`mt-1 text-sm ${
-            status.connection === 'Connected successfully!'
-              ? 'text-green-600'
-              : status.connection === 'Testing...'
-              ? 'text-gray-900'
-              : 'text-red-600'
-          }`}>
+          <dd className={`mt-1 text-sm ${status.connection === 'Connected' ? 'text-green-600' : 'text-red-600'}`}>
             {status.connection}
           </dd>
+          {status.error && (
+            <dd className="mt-1 text-sm text-red-600">
+              {status.error}
+            </dd>
+          )}
+          {status.missingEnvVars.length > 0 && (
+            <dd className="mt-2 text-sm text-gray-500">
+              Please add the following variables to your <code className="text-sm font-mono bg-gray-100 px-1 py-0.5 rounded">.env.local</code> file:
+              <ul className="mt-1 list-disc list-inside">
+                {status.missingEnvVars.map((envVar) => (
+                  <li key={envVar} className="text-sm font-mono">{envVar}</li>
+                ))}
+              </ul>
+            </dd>
+          )}
         </div>
         
         {status.branch && (
