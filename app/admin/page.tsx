@@ -1,4 +1,5 @@
 import { AddSponsorForm } from '@/components/admin/AddSponsorForm';
+import { SupabaseTest } from '@/components/admin/SupabaseTest';
 
 export default function AdminPage() {
   return (
@@ -49,6 +50,9 @@ export default function AdminPage() {
           </div>
         </div>
       </div>
+
+      {/* Supabase Connection Test */}
+      <SupabaseTest />
 
       {/* Add Sponsor Form */}
       <div className="bg-white shadow rounded-lg p-6">
