@@ -60,6 +60,23 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
     };
   }, []); // Empty dependency array since we only want this to run once
 
+  // Create a default sponsor level if none exist
+  const createDefaultSponsorLevel = async () => {
+    const { error: createLevelError } = await supabase
+      .from('sponsor_levels')
+      .insert([{ 
+        id: '00000000-0000-0000-0000-000000000001',
+        name: 'Gold'
+      }]);
+
+    if (createLevelError) {
+      console.error('Error creating default sponsor level:', createLevelError);
+      throw new Error('Failed to create default sponsor level');
+    }
+
+    return '00000000-0000-0000-0000-000000000001';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -77,22 +94,11 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
         throw new Error('Failed to check sponsor levels');
       }
 
+      let levelId = selectedLevel;
+      
       if (!levels || levels.length === 0) {
         // Create a default sponsor level if none exist
-        const { error: createLevelError } = await supabase
-          .from('sponsor_levels')
-          .insert([{ 
-            id: '00000000-0000-0000-0000-000000000001',
-            name: 'Gold'
-          }]);
-
-        if (createLevelError) {
-          console.error('Error creating default sponsor level:', createLevelError);
-          throw new Error('Failed to create default sponsor level');
-        }
-
-        // Use the default level ID
-        setSelectedLevel('00000000-0000-0000-0000-000000000001');
+        levelId = await createDefaultSponsorLevel();
       }
 
       // Now create the sponsor
@@ -100,7 +106,7 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
         .from('sponsors')
         .insert([{ 
           name,
-          level: selectedLevel || '00000000-0000-0000-0000-000000000001',
+          level: levelId,
           year: new Date().getFullYear() // Current year as default
         }]);
 
@@ -165,19 +171,25 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
             >
               Sponsor Level
             </label>
-            <select
-              id="sponsorLevel"
-              value={selectedLevel}
-              onChange={(e) => setSelectedLevel(e.target.value)}
-              className="appearance-none block w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm"
-              required
-            >
-              {levels.map((level) => (
-                <option key={level.id} value={level.id}>
-                  {level.name}
-                </option>
-              ))}
-            </select>
+            {levels.length > 0 ? (
+              <select
+                id="sponsorLevel"
+                value={selectedLevel}
+                onChange={(e) => setSelectedLevel(e.target.value)}
+                className="appearance-none block w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm"
+                required
+              >
+                {levels.map((level) => (
+                  <option key={level.id} value={level.id}>
+                    {level.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="text-sm text-muted-foreground py-2">
+                No sponsor levels available. One will be created automatically.
+              </div>
+            )}
           </div>
         </div>
 
