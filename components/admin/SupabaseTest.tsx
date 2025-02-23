@@ -132,5 +132,4 @@ export function SupabaseTest() {
       </dl>
     </div>
   );
-  );
 }
