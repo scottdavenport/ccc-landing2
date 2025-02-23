@@ -1,144 +1,86 @@
-'use client';
+'use server';
 
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
-// Define types for our environment variables
-type ClientEnvVars = {
-  SUPABASE_URL: string | undefined;
-  SUPABASE_KEY: string | undefined;
-  SUPABASE_BRANCH: string | undefined;
-  VERCEL_ENV: string | undefined;
-  VERCEL_GIT_COMMIT_REF: string | undefined;
-  NODE_ENV: string | undefined;
+type ConnectionStatus = {
+  connection: string;
+  branch: string | null;
+  error: string | null;
+  missingEnvVars: string[];
+  environment: string | null;
+  vercelEnv: string | null;
+  gitRef: string | null;
 };
 
-type EnvVarMapping = {
-  [key: string]: keyof ClientEnvVars;
-};
+// Server-side configuration
+async function getSupabaseConfig() {
+  // Get environment information
+  const vercelEnv = process.env.VERCEL_ENV || 'local';
+  const gitRef = process.env.VERCEL_GIT_COMMIT_REF || 'unknown';
+  const environment = process.env.NODE_ENV || 'development';
+  
+  // Determine schema based on environment
+  let schema: string;
+  if (vercelEnv === 'production') {
+    schema = 'public';
+  } else if (vercelEnv === 'preview') {
+    schema = 'development';
+  } else {
+    schema = 'development';
+  }
 
-// These variables are available at build time and runtime on the client
-const clientEnvVars: ClientEnvVars = {
-  SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  SUPABASE_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  SUPABASE_BRANCH: process.env.NEXT_PUBLIC_SUPABASE_BRANCH,
-  VERCEL_ENV: process.env.NEXT_PUBLIC_VERCEL_ENV,
-  VERCEL_GIT_COMMIT_REF: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF,
-  NODE_ENV: process.env.NODE_ENV
-};
+  return {
+    vercelEnv,
+    gitRef,
+    environment,
+    schema,
+    url: process.env.SUPABASE_URL,
+    key: process.env.SUPABASE_ANON_KEY
+  };
+}
 
-console.log('Client environment:', clientEnvVars);
-
-export function SupabaseTest() {
-  const [status, setStatus] = useState<{
-    connection: string;
-    branch: string | null;
-    error: string | null;
-    missingEnvVars: string[];
-    environment: string | null;
-    vercelEnv: string | null;
-    gitRef: string | null;
-  }>({
-    connection: 'Testing...',
-    branch: null,
+export async function SupabaseTest() {
+  const config = await getSupabaseConfig();
+  
+  // Initialize status
+  const status: ConnectionStatus = {
+    connection: 'Connected',
+    branch: config.schema,
     error: null,
     missingEnvVars: [],
-    environment: null,
-    vercelEnv: null,
-    gitRef: null
-  });
+    environment: config.environment,
+    vercelEnv: config.vercelEnv,
+    gitRef: config.gitRef
+  };
 
-  useEffect(() => {
-    async function testConnection() {
-      // Get environment information from client-side accessible vars
-      const vercelEnv = clientEnvVars.VERCEL_ENV || 'local';
-      const gitRef = clientEnvVars.VERCEL_GIT_COMMIT_REF || 'unknown';
-      const environment = clientEnvVars.NODE_ENV || 'development';
-      
-      // Determine branch based on environment
-      let branch;
-      if (vercelEnv === 'production') {
-        branch = 'main';
-      } else if (vercelEnv === 'preview') {
-        branch = gitRef || 'preview';
-      } else {
-        branch = clientEnvVars.SUPABASE_BRANCH || 'development';
-      }
+  try {
+    // Create Supabase client with server-side config
+    const supabase = createServerComponentClient({ cookies });
+    
+    // Test the connection
+    const { error } = await supabase.from('sponsors').select('*').limit(1);
 
-      // Check for required environment variables
-      const requiredEnvVars = [
-        'NEXT_PUBLIC_SUPABASE_URL',
-        'NEXT_PUBLIC_SUPABASE_ANON_KEY'
-      ];
-      
-      // Map environment variables to our client-safe object keys
-      const envVarMapping: EnvVarMapping = {
-        'NEXT_PUBLIC_SUPABASE_URL': 'SUPABASE_URL',
-        'NEXT_PUBLIC_SUPABASE_ANON_KEY': 'SUPABASE_KEY'
+    if (error) {
+      return {
+        ...status,
+        connection: 'Failed to connect',
+        error: error.message
       };
-
-      const envVarStatus = requiredEnvVars.map(envVar => ({
-        name: envVar,
-        exists: !!clientEnvVars[envVarMapping[envVar]],
-        value: clientEnvVars[envVarMapping[envVar]] ? `${clientEnvVars[envVarMapping[envVar]]?.substring(0, 8)}...` : undefined
-      }));
-
-      const missingEnvVars = envVarStatus.filter(env => !env.exists).map(env => env.name);
-      
-      console.log('Debug Info:', {
-        envVarStatus,
-        vercelEnv,
-        gitRef,
-        environment,
-        branch: clientEnvVars.SUPABASE_BRANCH
-      });
-
-      if (missingEnvVars.length > 0) {
-        setStatus({
-          connection: 'Configuration Error',
-          branch: clientEnvVars.SUPABASE_BRANCH || null,
-          error: 'Missing required environment variables',
-          missingEnvVars,
-          environment,
-          vercelEnv,
-          gitRef
-        });
-        return;
-      }
-
-      try {
-        // Test basic connection
-        const { error } = await supabase.from('sponsors').select('*').limit(1);
-        if (error) throw error;
-
-        // Branch was determined above
-
-        setStatus({
-          connection: 'Connected successfully!',
-          branch,
-          error: null,
-          missingEnvVars: [],
-          environment,
-          vercelEnv,
-          gitRef
-        });
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-        setStatus({
-          connection: 'Failed to connect',
-          branch: process.env.NEXT_PUBLIC_SUPABASE_BRANCH || null,
-          error: errorMessage,
-          missingEnvVars: [],
-          environment,
-          vercelEnv,
-          gitRef
-        });
-      }
     }
 
-    testConnection();
-  }, []);
+    return status;
+  } catch (error) {
+    return {
+      ...status,
+      connection: 'Failed to connect',
+      error: error instanceof Error ? error.message : 'An unknown error occurred'
+    };
+  }
 
+}
+// UI Component to display the connection status
+export default function SupabaseTestUI({ status }: { status: ConnectionStatus }) {
   return (
     <div className="rounded-lg bg-white p-4 shadow">
       <h3 className="text-lg font-medium text-gray-900">Supabase Connection Status</h3>
