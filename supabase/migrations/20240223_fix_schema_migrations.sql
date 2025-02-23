@@ -1,5 +1,5 @@
--- Delete the existing migration record
-DELETE FROM supabase_migrations.schema_migrations WHERE version = '20240223_create_api_schema';
+-- Delete the existing migration records if they exist
+DELETE FROM supabase_migrations.schema_migrations WHERE version IN ('20240223_create_api_schema', '20240223_fix_schema_migrations');
 
 -- Drop and recreate tables to ensure clean state
 DROP TABLE IF EXISTS api.sponsors CASCADE;
