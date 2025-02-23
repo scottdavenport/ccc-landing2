@@ -2,6 +2,7 @@
 
 import { ThemeProvider } from 'next-themes';
 import { ReactNode } from 'react';
+import { AuthProvider } from '@/lib/auth';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -9,14 +10,16 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="light"
-      enableSystem={false}
-      disableTransitionOnChange
-      forcedTheme="light"
-    >
-      {children}
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        enableSystem={false}
+        disableTransitionOnChange
+        forcedTheme="light"
+      >
+        {children}
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
