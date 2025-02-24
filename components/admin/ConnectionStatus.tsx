@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-
 export function ConnectionStatus() {
   const [status, setStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
   const [lastChecked, setLastChecked] = useState<Date>(new Date());
@@ -45,11 +44,7 @@ export function ConnectionStatus() {
       className={`inline-flex items-center px-3 py-1 rounded-full border ${getStatusColor()} text-sm font-medium`}
       title={`Last checked: ${lastChecked.toLocaleTimeString()}`}
     >
-      <span className={`w-2 h-2 rounded-full mr-2 ${
-        status === 'connected' ? 'bg-green-500' :
-        status === 'disconnected' ? 'bg-red-500' :
-        'bg-gray-500'
-      }`} />
+      <span className={`w-2 h-2 rounded-full mr-2 ${status === 'connected' ? 'bg-green-500' : status === 'disconnected' ? 'bg-red-500' : 'bg-gray-500'}`} />
       {status === 'connected' ? 'Connected to Supabase' :
        status === 'disconnected' ? 'Disconnected' :
        'Checking connection...'}
