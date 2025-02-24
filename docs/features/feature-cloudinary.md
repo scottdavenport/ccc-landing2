@@ -9,6 +9,9 @@ This feature will add support for managing sponsor logos through Cloudinary, int
 - [x] Basic image upload implementation
 - [x] Sponsor table schema updates
 - [x] Basic UI components for logo management
+- [x] Logo thumbnails in admin table
+- [x] Logo upload dialog implementation
+- [x] Connection status indicators
 - [ ] Testing and validation
 - [ ] Logo display in sponsor carousel
 
@@ -23,10 +26,9 @@ This feature will add support for managing sponsor logos through Cloudinary, int
 - Implement proper error handling for upload failures
 
 ### Database Updates
-- Add new fields to sponsors table:
-  - `logo_url`: STRING (Cloudinary URL for full-size image)
-  - `logo_thumbnail_url`: STRING (Cloudinary URL for thumbnail)
-  - `logo_uploaded_at`: TIMESTAMP
+- Added new fields to sponsors table:
+  - `image_url`: STRING (Cloudinary URL for full-size image)
+  - `cloudinary_public_id`: STRING (Cloudinary public ID for the image)
 
 ## Implementation Progress
 
@@ -48,10 +50,41 @@ This feature will add support for managing sponsor logos through Cloudinary, int
 4. Implement rollback mechanism if either Cloudinary or Supabase operations fail
 
 ### Phase 4: Admin UI Updates
-1. Add logo upload field to sponsor creation form
-2. Update sponsors table to display logo thumbnails
-3. Add logo replacement functionality in table
-4. Implement image preview before upload
+1. ✅ Add logo upload field to sponsor creation form
+2. ✅ Add logo thumbnails to sponsor table
+3. ✅ Implement logo upload dialog with preview
+4. ✅ Add drag-and-drop support for logo uploads
+5. ✅ Update sponsors table to display logo thumbnails
+6. ✅ Add logo replacement functionality in table
+7. ✅ Implement image preview before upload
+8. ✅ Add Cloudinary connection status indicator
+9. ✅ Add Supabase connection status indicator
+
+## Testing Strategy
+
+### Unit Tests (Jest)
+- Image validation functions
+- URL transformation utilities
+- Component rendering tests
+- Error handling scenarios
+
+### Integration Tests (Jest + Testing Library)
+- Upload form submission flow
+- Error state handling
+- State management verification
+- Database operations validation
+
+### E2E Tests (Playwright)
+- Complete upload workflow
+- Image preview functionality
+- Database state verification
+- Error scenario handling
+- Cross-browser compatibility testing
+
+### Test Coverage Goals
+- Critical path: 100% coverage
+- Error handling: 90% coverage
+- Edge cases: 80% coverage
 
 ## Configuration
 ```typescript

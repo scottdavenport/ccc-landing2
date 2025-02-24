@@ -11,6 +11,17 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    rules: {
+      // Allow unused variables in Supabase destructuring pattern
+      '@typescript-eslint/no-unused-vars': ['error', {
+        varsIgnorePattern: '^data$',
+        destructuredArrayIgnorePattern: '^data$',
+        argsIgnorePattern: '^_',
+      }],
+    },
+  },
 ];
 
 export default eslintConfig;
