@@ -174,13 +174,6 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
 
   return (
     <div className="glass-card p-6 rounded-lg shadow-lg">
-      <div className="flex items-center space-x-4 mb-6">
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-500">Status:</span>
-          <CloudinaryStatus />
-        </div>
-      </div>
-
       {error && (
         <div className="mb-6 p-4 bg-destructive/10 text-destructive rounded-lg">
           {error}

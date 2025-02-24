@@ -35,22 +35,26 @@ export function CloudinaryStatus() {
     return () => clearInterval(interval);
   }, []);
 
+  const getStatusColor = () => {
+    switch (status) {
+      case 'connected':
+        return 'bg-green-100 text-green-800 border-green-300';
+      case 'error':
+        return 'bg-red-100 text-red-800 border-red-300';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+  };
+
   return (
-    <div className="flex items-center space-x-2">
-      <div className="flex items-center">
-        <span className="mr-2 text-sm text-gray-500">Cloudinary:</span>
-        <LastCheckedTime date={lastChecked} />
-        {status === 'connecting' && (
-          <div className="h-2 w-2 rounded-full bg-yellow-400"></div>
-        )}
-        {status === 'connected' && (
-          <div className="h-2 w-2 rounded-full bg-green-400"></div>
-        )}
-        {status === 'error' && (
-          <div className="h-2 w-2 rounded-full bg-red-400"></div>
-        )}
-      </div>
-      {error && <span className="text-sm text-red-500">{error}</span>}
+    <div
+      className={`inline-flex items-center px-3 py-1 rounded-full border ${getStatusColor()} text-sm font-medium`}
+      title={lastChecked ? `Last checked: ${lastChecked.toLocaleTimeString()}` : undefined}
+    >
+      <span className={`w-2 h-2 rounded-full mr-2 ${status === 'connected' ? 'bg-green-500' : status === 'error' ? 'bg-red-500' : 'bg-gray-500'}`} />
+      {status === 'connected' ? 'Connected to Cloudinary' :
+       status === 'error' ? (error || 'Connection Error') :
+       'Checking connection...'}
     </div>
   );
 }
