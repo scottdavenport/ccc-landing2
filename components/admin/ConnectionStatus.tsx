@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { LastCheckedTime } from './LastCheckedTime';
-
 export function ConnectionStatus() {
   const [status, setStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
   const [lastChecked, setLastChecked] = useState<Date>(new Date());
