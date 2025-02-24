@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/database.types';
-import { CloudinaryStatus } from './CloudinaryStatus';
+
 
 
 type SponsorLevel = Database['api']['Tables']['sponsor_levels']['Row'];
