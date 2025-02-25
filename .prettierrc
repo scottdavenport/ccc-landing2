@@ -3,6 +3,12 @@
   "singleQuote": true,
   "tabWidth": 2,
   "trailingComma": "es5",
+  "printWidth": 100,
+  "bracketSpacing": true,
+  "arrowParens": "avoid",
+  "endOfLine": "lf",
+  "bracketSameLine": false,
+  "jsxSingleQuote": false,
   "plugins": ["prettier-plugin-tailwindcss", "@ianvs/prettier-plugin-sort-imports"],
   "importOrder": [
     "^(react/(.*)$)|^(react$)",

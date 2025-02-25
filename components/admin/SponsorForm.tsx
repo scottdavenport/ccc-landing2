@@ -1,61 +1,61 @@
-import { useState, useRef } from 'react'
-import Image from 'next/image'
+import { useRef, useState } from 'react';
+import Image from 'next/image';
 
 interface SponsorFormProps {
-  onSuccess?: () => void
+  onSuccess?: () => void;
 }
 
 export function SponsorForm({ onSuccess }: SponsorFormProps) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [isSuccess, setIsSuccess] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const formRef = useRef<HTMLFormElement>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0];
+    if (!file) return;
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      setError('Invalid file type')
-      return
+      setError('Invalid file type');
+      return;
     }
 
     // Create preview URL
-    const url = URL.createObjectURL(file)
-    setPreviewUrl(url)
-    setError(null)
-  }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    setError(null);
+  };
 
   const resetForm = () => {
     if (formRef.current) {
-      formRef.current.reset()
-      setPreviewUrl(null)
+      formRef.current.reset();
+      setPreviewUrl(null);
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (isSubmitting) return
+    e.preventDefault();
+    if (isSubmitting) return;
 
-    console.log('Form submission starting...')
+    console.log('Form submission starting...');
     // Set submitting state immediately
-    await Promise.resolve(setIsSubmitting(true))
-    setError(null)
-    setIsSuccess(false)
-    
-    // Small delay to ensure state updates are processed
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await Promise.resolve(setIsSubmitting(true));
+    setError(null);
+    setIsSuccess(false);
 
-    const formData = new FormData(e.currentTarget)
-    const fileInput = e.currentTarget.querySelector('input[type="file"]') as HTMLInputElement
-    const file = fileInput?.files?.[0]
-    
+    // Small delay to ensure state updates are processed
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const formData = new FormData(e.currentTarget);
+    const fileInput = e.currentTarget.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = fileInput?.files?.[0];
+
     if (!file) {
-      setError('Please select a logo file')
-      setIsSubmitting(false)
-      return
+      setError('Please select a logo file');
+      setIsSubmitting(false);
+      return;
     }
 
     console.log('Submitting form with data:', {
@@ -64,55 +64,55 @@ export function SponsorForm({ onSuccess }: SponsorFormProps) {
       file: {
         name: file.name,
         type: file.type,
-        size: file.size
-      }
-    })
-    
+        size: file.size,
+      },
+    });
+
     try {
       const response = await fetch(`${window.location.origin}/api/sponsors`, {
         method: 'POST',
         body: formData,
         headers: {
-          'Accept': 'application/json',
+          Accept: 'application/json',
         },
-        credentials: 'same-origin'
-      })
+        credentials: 'same-origin',
+      });
 
       console.log('Response received:', {
         status: response.status,
         statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries())
-      })
+        headers: Object.fromEntries(response.headers.entries()),
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload image')
+        throw new Error(data.error || 'Failed to upload image');
       }
 
       // Set success state first
-      setIsSuccess(true)
-      setError(null)
+      setIsSuccess(true);
+      setError(null);
 
       // Reset form
-      resetForm()
+      resetForm();
 
       // Call onSuccess callback if provided
       if (onSuccess) {
         const timer = setTimeout(() => {
-          setIsSuccess(false) // Clear success message
-          onSuccess()
-        }, 1500) // Give time to show success message
+          setIsSuccess(false); // Clear success message
+          onSuccess();
+        }, 1500); // Give time to show success message
 
-        return () => clearTimeout(timer)
+        return () => clearTimeout(timer);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload image')
-      setIsSuccess(false)
+      setError(err instanceof Error ? err.message : 'Failed to upload image');
+      setIsSuccess(false);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
@@ -172,14 +172,10 @@ export function SponsorForm({ onSuccess }: SponsorFormProps) {
         </div>
       )}
 
-      {error && (
-        <div className="error-message text-red-500">{error}</div>
-      )}
+      {error && <div className="error-message text-red-500">{error}</div>}
 
       {isSuccess && (
-        <div className="success-message text-green-500">
-          Sponsor created successfully
-        </div>
+        <div className="success-message text-green-500">Sponsor created successfully</div>
       )}
 
       <button
@@ -194,5 +190,5 @@ export function SponsorForm({ onSuccess }: SponsorFormProps) {
         </span>
       </button>
     </form>
-  )
+  );
 }

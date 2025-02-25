@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
 import { supabase } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/database.types';
-
-
 
 type SponsorLevel = Database['api']['Tables']['sponsor_levels']['Row'];
 
@@ -37,9 +36,7 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
     const timer = setTimeout(async () => {
       if (!isMounted) return;
 
-      const { data, error } = await supabase
-        .from('sponsor_levels')
-        .select('*');
+      const { data, error } = await supabase.from('sponsor_levels').select('*');
 
       if (!isMounted) return;
 
@@ -71,7 +68,9 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
     }
   };
 
-  const uploadToCloudinary = async (file: File): Promise<{ public_id: string; secure_url: string }> => {
+  const uploadToCloudinary = async (
+    file: File
+  ): Promise<{ public_id: string; secure_url: string }> => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || '');
@@ -108,15 +107,18 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
         body: JSON.stringify({ publicId, timestamp }),
       }).then(res => res.json());
 
-      await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/destroy`, {
-        method: 'POST',
-        body: JSON.stringify({
-          public_id: publicId,
-          signature: signature.signature,
-          api_key: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY,
-          timestamp,
-        }),
-      });
+      await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/destroy`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            public_id: publicId,
+            signature: signature.signature,
+            api_key: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY,
+            timestamp,
+          }),
+        }
+      );
     } catch (error) {
       console.error('Error deleting image from Cloudinary:', error);
     }
@@ -175,9 +177,7 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
   return (
     <div className="glass-card p-6 rounded-lg shadow-lg">
       {error && (
-        <div className="mb-6 p-4 bg-destructive/10 text-destructive rounded-lg">
-          {error}
-        </div>
+        <div className="mb-6 p-4 bg-destructive/10 text-destructive rounded-lg">{error}</div>
       )}
 
       {success && (
@@ -189,17 +189,14 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
           <div>
-            <label
-              htmlFor="sponsorName"
-              className="block text-sm font-medium text-foreground mb-1"
-            >
+            <label htmlFor="sponsorName" className="block text-sm font-medium text-foreground mb-1">
               Sponsor Name
             </label>
             <input
               type="text"
               id="sponsorName"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={e => setName(e.target.value)}
               className="appearance-none block w-full px-3 py-2 border border-border rounded-md shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm"
               placeholder="Enter sponsor name"
               required
@@ -217,11 +214,11 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
               <select
                 id="sponsorLevel"
                 value={selectedLevel}
-                onChange={(e) => setSelectedLevel(e.target.value)}
+                onChange={e => setSelectedLevel(e.target.value)}
                 className="appearance-none block w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm"
                 required
               >
-                {levels.map((level) => (
+                {levels.map(level => (
                   <option key={level.id} value={level.id}>
                     {level.name}
                   </option>
@@ -235,10 +232,7 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
           </div>
 
           <div>
-            <label
-              htmlFor="logo"
-              className="block text-sm font-medium text-foreground mb-1"
-            >
+            <label htmlFor="logo" className="block text-sm font-medium text-foreground mb-1">
               Sponsor Logo
             </label>
             <input

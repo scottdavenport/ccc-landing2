@@ -13,9 +13,5 @@ export function LastCheckedTime({ date }: { date: Date | null }) {
 
   if (!formattedTime) return null;
 
-  return (
-    <span className="text-xs text-gray-400">
-      Last checked: {formattedTime}
-    </span>
-  );
+  return <span className="text-xs text-gray-400">Last checked: {formattedTime}</span>;
 }

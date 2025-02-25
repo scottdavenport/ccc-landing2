@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
+
 import { supabase } from './supabase/client';
 
 type AuthContextType = {
@@ -30,7 +31,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Listen for changes on auth state (signed in, signed out, etc.)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
@@ -45,12 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
       });
-      
+
       if (error) {
         console.error('Auth Provider: Sign in error:', error);
         throw error;
       }
-      
+
       console.log('Auth Provider: Sign in successful', data.user?.id);
     } catch (err) {
       console.error('Auth Provider: Unexpected error during sign in:', err);

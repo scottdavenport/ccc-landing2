@@ -5,6 +5,7 @@ Hey there! 👋 Welcome to the CCC Landing Page project. Let's break down what t
 ## What Are We Building? 🏗️
 
 We're building a website for CCC that has two main parts:
+
 1. A public landing page that everyone can see
 2. An admin dashboard where we can manage the website content
 
@@ -13,21 +14,25 @@ We're building a website for CCC that has two main parts:
 We're using some cool modern tools:
 
 ### Next.js 14
+
 - This is our main framework
 - Think of it like Lego blocks for building websites
 - It helps us make both the front-end (what users see) and back-end (behind the scenes stuff)
 
 ### TypeScript
+
 - It's like regular JavaScript but with extra safety features
 - Helps catch mistakes before they happen
 - Makes it easier to understand what kind of data we're working with
 
 ### Tailwind CSS
+
 - A tool that makes styling our website super easy
 - Instead of writing separate CSS files, we add style classes directly in our code
 - Makes it quick to make things look good!
 
 ### Supabase
+
 - Our database and authentication service
 - Think of it like a super-powered spreadsheet that lives on the internet
 - Stores all our data (like sponsor information) securely
@@ -57,6 +62,7 @@ public/              # Images and other files
 ## Key Features 🌟
 
 1. **Public Landing Page**
+
    - Shows sponsors in a cool carousel
    - Displays fundraising progress
    - Lists past winners

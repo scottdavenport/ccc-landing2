@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+
 import { SponsorForm } from '@/components/admin/SponsorForm';
 
 export default function AdminSponsorsPage() {
@@ -25,9 +26,7 @@ export default function AdminSponsorsPage() {
         </div>
       )}
 
-      <div className="sponsors-list">
-        {/* Sponsor list will be implemented here */}
-      </div>
+      <div className="sponsors-list">{/* Sponsor list will be implemented here */}</div>
     </div>
   );
 }

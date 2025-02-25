@@ -15,12 +15,15 @@ export async function GET() {
     if (result.status !== 'ok') {
       throw new Error('Cloudinary connection test failed');
     }
-    
+
     return NextResponse.json({ status: 'connected' });
   } catch (error) {
     console.error('Cloudinary connection error:', error);
     return NextResponse.json(
-      { status: 'error', message: error instanceof Error ? error.message : 'Failed to connect to Cloudinary' },
+      {
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Failed to connect to Cloudinary',
+      },
       { status: 500 }
     );
   }
