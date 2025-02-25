@@ -51,9 +51,13 @@ function LoadingSpinner() {
   );
 }
 
-export default function SponsorsTable() {
+interface SponsorsTableProps {
+  onAddSponsor: () => void;
+}
+
+export default function SponsorsTable({ onAddSponsor }: SponsorsTableProps) {
   const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
-  const [isAddSponsorOpen, setIsAddSponsorOpen] = useState(false);
+
   const [sponsors, setSponsors] = useState<SponsorWithLevel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -305,43 +309,47 @@ export default function SponsorsTable() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Sponsors</h2>
-        <div className="flex gap-2">
-          {selectedRows.length > 0 && (
-            <Button
-              variant="destructive"
-              onClick={() => setShowDeleteDialog(true)}
-              className="gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete Selected ({selectedRows.length})
-            </Button>
-          )}
-          <Button onClick={() => setIsAddSponsorOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Add Sponsor
-          </Button>
-        </div>
-      </div>
-
       {error && <div className="bg-destructive/10 text-destructive p-4 rounded-lg">{error}</div>}
 
       {isLoading ? (
         <LoadingSpinner />
-      ) : (
-        <div className="border rounded-lg" style={{ height: 500 }}>
-          <DataGrid
-            rows={sponsors}
-            columns={columns}
-            checkboxSelection
-            disableRowSelectionOnClick
-            rowSelectionModel={selectedRows}
-            onRowSelectionModelChange={newSelection => {
-              setSelectedRows(newSelection);
-            }}
-          />
+      ) : sponsors.length === 0 ? (
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No sponsors yet</h3>
+          <p className="text-gray-500 mb-4">Get started by adding your first sponsor</p>
+          <Button onClick={onAddSponsor} className="gap-2">
+            <Plus className="w-4 h-4" />
+            Add Sponsor
+          </Button>
         </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-end gap-2">
+            {selectedRows.length > 0 && (
+              <Button
+                variant="destructive"
+                onClick={() => setShowDeleteDialog(true)}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Selected ({selectedRows.length})
+              </Button>
+            )}
+          </div>
+
+          <div className="border rounded-lg" style={{ height: 500 }}>
+            <DataGrid
+              rows={sponsors}
+              columns={columns}
+              checkboxSelection
+              disableRowSelectionOnClick
+              rowSelectionModel={selectedRows}
+              onRowSelectionModelChange={newSelection => {
+                setSelectedRows(newSelection);
+              }}
+            />
+          </div>
+        </>
       )}
 
       <SponsorLogoDialog
@@ -351,11 +359,7 @@ export default function SponsorsTable() {
         sponsorName={sponsors.find(s => s.id === selectedSponsorId)?.name || ''}
       />
 
-      <AddSponsorDialog
-        isOpen={isAddSponsorOpen}
-        onClose={() => setIsAddSponsorOpen(false)}
-        onSponsorAdded={fetchSponsors}
-      />
+
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
