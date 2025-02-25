@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
 export function CloudinaryStatus() {
   const [status, setStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const [error, setError] = useState<string | null>(null);
@@ -49,10 +50,14 @@ export function CloudinaryStatus() {
       className={`inline-flex items-center px-3 py-1 rounded-full border ${getStatusColor()} text-sm font-medium`}
       title={lastChecked ? `Last checked: ${lastChecked.toLocaleTimeString()}` : undefined}
     >
-      <span className={`w-2 h-2 rounded-full mr-2 ${status === 'connected' ? 'bg-green-500' : status === 'error' ? 'bg-red-500' : 'bg-gray-500'}`} />
-      {status === 'connected' ? 'Connected to Cloudinary' :
-       status === 'error' ? (error || 'Connection Error') :
-       'Checking connection...'}
+      <span
+        className={`w-2 h-2 rounded-full mr-2 ${status === 'connected' ? 'bg-green-500' : status === 'error' ? 'bg-red-500' : 'bg-gray-500'}`}
+      />
+      {status === 'connected'
+        ? 'Connected to Cloudinary'
+        : status === 'error'
+          ? error || 'Connection Error'
+          : 'Checking connection...'}
     </div>
   );
 }

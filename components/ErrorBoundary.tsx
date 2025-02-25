@@ -2,6 +2,7 @@
 
 import { Component, ReactNode } from 'react';
 import { AlertCircle } from 'lucide-react';
+
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 
@@ -16,9 +17,8 @@ interface State {
 }
 
 class ErrorBoundary extends Component<Props, State> {
-
   public state: State = {
-    hasError: false
+    hasError: false,
   };
 
   public static getDerivedStateFromError(error: Error): State {
@@ -41,10 +41,7 @@ class ErrorBoundary extends Component<Props, State> {
           <AlertTitle>Something went wrong</AlertTitle>
           <AlertDescription className="flex flex-col gap-2">
             <p>An error occurred while rendering this component.</p>
-            <Button
-              variant="outline"
-              onClick={() => this.setState({ hasError: false })}
-            >
+            <Button variant="outline" onClick={() => this.setState({ hasError: false })}>
               Try again
             </Button>
           </AlertDescription>

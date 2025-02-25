@@ -1,25 +1,25 @@
 'use client';
 
-import { motion } from "framer-motion";
+import { motion } from 'framer-motion';
 
 const winners = [
   {
     year: 2023,
-    name: "John Smith",
+    name: 'John Smith',
     score: 68,
-    achievement: "Tournament Champion",
+    achievement: 'Tournament Champion',
   },
   {
     year: 2023,
-    name: "Sarah Johnson",
+    name: 'Sarah Johnson',
     score: 70,
-    achievement: "Runner-up",
+    achievement: 'Runner-up',
   },
   {
     year: 2023,
-    name: "Michael Williams",
+    name: 'Michael Williams',
     score: 71,
-    achievement: "Third Place",
+    achievement: 'Third Place',
   },
 ];
 

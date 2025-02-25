@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { v2 as cloudinary } from 'cloudinary';
 import { createClient } from '@supabase/supabase-js';
+import { v2 as cloudinary } from 'cloudinary';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -22,10 +22,7 @@ export async function POST(request: Request) {
     const logo = formData.get('logo') as File;
 
     if (!name || !website || !logo) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     // Convert the file to a buffer
@@ -53,7 +50,7 @@ export async function POST(request: Request) {
       public_id: string;
     }
 
-    const uploadResult = await uploadPromise as CloudinaryUploadResult;
+    const uploadResult = (await uploadPromise) as CloudinaryUploadResult;
 
     // Save to Supabase
     const { data, error } = await supabase
@@ -75,9 +72,6 @@ export async function POST(request: Request) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error creating sponsor:', error);
-    return NextResponse.json(
-      { error: 'Failed to create sponsor' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create sponsor' }, { status: 500 });
   }
 }

@@ -1,9 +1,7 @@
 'use client';
 
-import { motion } from "framer-motion";
-import { useInView } from "framer-motion";
-
-import { useRef, useState, useEffect } from "react";
+import { useEffect, useRef, useState } from 'react';
+import { motion, useInView } from 'framer-motion';
 
 export const FundsRaised = () => {
   const ref = useRef(null);
