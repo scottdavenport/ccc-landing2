@@ -18,6 +18,7 @@ This chore addresses various cleanup tasks and minor fixes across the codebase t
   - feature-eslint-config 2.md
   - playwright-report/index 2.html
 - Cleaned up deleted playwright report files and images
+- Clean up any unused files, imports, functions, and code
 
 ## Technical Details
 
