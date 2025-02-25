@@ -1,12 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { AddSponsorForm } from '@/components/admin/AddSponsorForm';
 import { SponsorsTable } from '@/components/admin/SponsorsTable';
 
 
 export default function AdminPage() {
-  const [refreshKey, setRefreshKey] = useState(0);
   return (
     <div className="space-y-6">
       <div className="bg-white shadow rounded-lg p-6">
