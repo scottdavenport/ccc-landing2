@@ -73,24 +73,16 @@ export default function SponsorCarousel() {
 
       // Update parallax values
       try {
-        const engine = emblaApi.internalEngine();
-        const scrollProgress = emblaApi.scrollProgress();
+        const scrollSnap = emblaApi.scrollSnapList();
+        const location = emblaApi.scrollProgress();
         
-        if (engine?.location?.measurePoints && Array.isArray(engine.location.measurePoints)) {
-          const styles = sponsors.map((_, index) => {
-            const slide = engine.location.measurePoints[index];
-            if (!slide) return 0;
-            
-            const viewportSize = engine.scrollBody?.viewportSize || 0;
-            const contentSize = engine.scrollBody?.contentSize || 0;
-            const distance = Math.abs(
-              (scrollProgress * (contentSize - viewportSize)) -
-              slide.distance
-            );
-            return Math.min(1, Math.max(0, 1 - distance / 400)) * 50;
-          });
-          setParallaxValues(styles);
-        }
+        const styles = sponsors.map((_, index) => {
+          const slidePosition = scrollSnap[index] || 0;
+          const distance = Math.abs(location - slidePosition);
+          return Math.min(1, Math.max(0, 1 - distance * 2)) * 50;
+        });
+        
+        setParallaxValues(styles);
       } catch (error) {
         console.error('Error calculating parallax:', error);
         setParallaxValues(sponsors.map(() => 0));
@@ -109,7 +101,7 @@ export default function SponsorCarousel() {
       emblaApi.off('select', updateScrollState);
       emblaApi.off('reInit', updateScrollState);
     };
-  }, [emblaApi, onSelect]);
+  }, [emblaApi, onSelect, sponsors]);
 
   useEffect(() => {
     // Create placeholder sponsors
