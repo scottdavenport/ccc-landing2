@@ -7,7 +7,7 @@ import { FundsRaised } from '@/components/FundsRaised'; // Shows how much money 
 import { Hero } from '@/components/Hero'; // The big welcome banner at the top
 
 import { PastWinners } from '@/components/PastWinners'; // Shows previous tournament winners
-import { Sponsors } from '@/components/Sponsors'; // Shows all our helpful sponsors
+import SponsorCarousel from '@/components/SponsorCarousel'; // Shows all our helpful sponsors in a beautiful carousel
 
 // This is our main page - it's like putting all our LEGO pieces together
 const Index = () => {
@@ -24,7 +24,7 @@ const Index = () => {
         <FundsRaised /> {/* Shows our fundraising progress */}
       </ErrorBoundary>
       <ErrorBoundary>
-        <Sponsors /> {/* Shows all the nice people who help us */}
+        <SponsorCarousel /> {/* Shows all our sponsors in an interactive carousel */}
       </ErrorBoundary>
       <ErrorBoundary>
         <PastWinners /> {/* Shows who won before */}

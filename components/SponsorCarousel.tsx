@@ -22,13 +22,14 @@ const OPTIONS: EmblaOptionsType = {
   loop: true,
   align: 'center',
   containScroll: 'trimSnaps',
-  dragFree: false,
-  skipSnaps: false,
-  inViewThreshold: 0.6,
+  dragFree: true,
+  skipSnaps: true,
+  inViewThreshold: 0.7,
   slidesToScroll: 1,
+  speed: 20,
   breakpoints: {
     '(max-width: 640px)': { dragFree: true },
-    '(min-width: 641px)': { dragFree: false },
+    '(min-width: 641px)': { dragFree: true },
   },
 };
 
@@ -45,6 +46,7 @@ export default function SponsorCarousel() {
   const [emblaRef, emblaApi] = useEmblaCarousel(OPTIONS, [AutoPlay(AUTOPLAY_OPTIONS)]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [parallaxValues, setParallaxValues] = useState<number[]>([]);
   const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
@@ -68,6 +70,19 @@ export default function SponsorCarousel() {
       // Update scroll progress
       const progress = Math.max(0, Math.min(1, emblaApi.scrollProgress()));
       setScrollProgress(progress * 100);
+
+      // Update parallax values
+      const engine = emblaApi.internalEngine();
+      const scrollProgress = emblaApi.scrollProgress();
+      const styles = sponsors.map((_, index) => {
+        const slide = engine.location.measurePoints[index];
+        const distance = Math.abs(
+          (scrollProgress * (engine.scrollBody.contentSize - engine.scrollBody.viewportSize)) -
+          slide.distance
+        );
+        return Math.min(1, Math.max(0, 1 - distance / 400)) * 50;
+      });
+      setParallaxValues(styles);
     };
 
     emblaApi.on('select', onSelect);
@@ -169,6 +184,11 @@ export default function SponsorCarousel() {
                   >
                     <div
                       className="relative aspect-square cursor-pointer overflow-hidden rounded-xl bg-white p-6 group"
+                      style={{
+                        transform: `scale(${1 + (parallaxValues[index] || 0) * 0.001})
+                                  rotate(${(parallaxValues[index] || 0) * 0.05}deg)`,
+                        transition: 'transform 0.2s ease-out'
+                      }}
                       onClick={() => setSelectedSponsor(sponsor)}
                       role="button"
                       tabIndex={0}
@@ -178,7 +198,7 @@ export default function SponsorCarousel() {
                         src={sponsor.imageUrl}
                         alt={`${sponsor.name} logo`}
                         fill
-                        className="object-contain p-4 transition-all duration-500 ease-out group-hover:scale-110 group-hover:rotate-[-2deg]"
+                        className="object-contain p-4 transition-all duration-500 ease-out group-hover:scale-110 group-hover:rotate-[-2deg] motion-safe:animate-float"
                         sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                       />
                     </div>
