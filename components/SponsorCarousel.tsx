@@ -26,7 +26,7 @@ const OPTIONS: EmblaOptionsType = {
   skipSnaps: true,
   inViewThreshold: 0.7,
   slidesToScroll: 1,
-  speed: 20,
+  duration: 20,
   breakpoints: {
     '(max-width: 640px)': { dragFree: true },
     '(min-width: 641px)': { dragFree: true },
