@@ -31,6 +31,7 @@ type SponsorWithLevel = Sponsor & {
   level_name: string;
   isEditing?: boolean;
   id: string; // Required for MUI DataGrid
+  created_at: string;
 };
 
 function LoadingSpinner() {
@@ -60,7 +61,7 @@ export default function SponsorsTable() {
           *,
           sponsor_levels (name)
         `)
-        .order('name');
+        .order('created_at', { ascending: false });
 
       if (error) {
         throw error;
@@ -71,10 +72,12 @@ export default function SponsorsTable() {
         return;
       }
 
+      console.log('Sponsors data:', data); // Debug log
       const sponsorsWithLevelNames = (data as SponsorWithLevel[]).map(sponsor => ({
         ...sponsor,
         level_name: sponsor.sponsor_levels?.name || 'Unknown'
       }));
+      console.log('Processed sponsors:', sponsorsWithLevelNames); // Debug log
 
       setSponsors(sponsorsWithLevelNames);
     } catch (err) {
@@ -89,25 +92,7 @@ export default function SponsorsTable() {
     setSelectedSponsorId(sponsorId);
   };
 
-  const handleCellEdit = async (sponsorId: string, field: keyof SponsorWithLevel, value: string) => {
-    try {
-      const { error } = await supabase
-        .from('sponsors')
-        .update({ [field]: value })
-        .eq('id', sponsorId);
 
-      if (error) throw error;
-
-      setSponsors(prev => prev.map(sponsor => 
-        sponsor.id === sponsorId 
-          ? { ...sponsor, [field]: value }
-          : sponsor
-      ));
-    } catch (err) {
-      console.error(`Error updating ${field}:`, err);
-      throw new Error(`Failed to update ${field}`);
-    }
-  };
 
   const handleUpload = async (file: File) => {
     if (!selectedSponsorId) return;
@@ -162,25 +147,33 @@ export default function SponsorsTable() {
     {
       field: 'name',
       headerName: 'Name',
-      width: 200,
-      editable: true,
+      flex: 1,
+      minWidth: 180,
+      headerAlign: 'center',
+      align: 'left',
     },
     {
       field: 'level_name',
       headerName: 'Level',
-      width: 150,
+      flex: 0.7,
+      minWidth: 120,
+      headerAlign: 'center',
+      align: 'center',
     },
     {
       field: 'year',
       headerName: 'Year',
-      width: 100,
-      editable: true,
-      type: 'number',
+      flex: 0.5,
+      minWidth: 100,
+      headerAlign: 'center',
+      align: 'center',
     },
     {
       field: 'image_url',
       headerName: 'Logo',
-      width: 150,
+      flex: 0.8,
+      minWidth: 150,
+      headerAlign: 'center',
       renderCell: (params) => {
         const sponsor = params.row;
         return (
@@ -217,10 +210,38 @@ export default function SponsorsTable() {
       },
     },
     {
+      field: 'created_at',
+      headerName: 'Added',
+      flex: 0.8,
+      minWidth: 160,
+      headerAlign: 'center',
+      align: 'center',
+      renderCell: (params) => {
+        try {
+          const date = params.row.created_at;
+          if (!date) return '-';
+          const formattedDate = new Date(date).toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          });
+          return formattedDate;
+        } catch (err) {
+          console.error('Error formatting date:', err);
+          return '-';
+        }
+      }
+    },
+    {
       field: 'actions',
       headerName: 'Actions',
       width: 100,
       sortable: false,
+      headerAlign: 'center',
+      align: 'center',
       renderCell: (params) => (
         <Button
           variant="ghost"
@@ -231,20 +252,6 @@ export default function SponsorsTable() {
           <Trash2 className="h-4 w-4" />
         </Button>
       ),
-    },
-    {
-      field: 'created_at',
-      headerName: 'Added',
-      width: 180,
-      type: 'dateTime',
-      valueFormatter: ({ value }) => {
-        if (!value) return '';
-        const date = new Date(value);
-        return date.toLocaleString('en-US', {
-          dateStyle: 'medium',
-          timeStyle: 'short'
-        });
-      }
     }
   ];
 
@@ -338,31 +345,8 @@ export default function SponsorsTable() {
             onRowSelectionModelChange={(newSelection) => {
               setSelectedRows(newSelection);
             }}
-            processRowUpdate={async (updatedRow: SponsorWithLevel, originalRow: SponsorWithLevel) => {
-              const field = Object.keys(updatedRow).find(key => {
-                const k = key as keyof SponsorWithLevel;
-                return updatedRow[k] !== originalRow[k];
-              }) as keyof SponsorWithLevel;
-              if (!field) return originalRow;
-              
-              try {
-                const value = updatedRow[field];
-                if (value === undefined) return originalRow;
-                
-                // Convert value to string if it's a number or boolean
-                const stringValue = typeof value === 'object' && value !== null ? value.name : String(value);
-                await handleCellEdit(updatedRow.id, field, stringValue);
-                return updatedRow;
-              } catch (err) {
-                console.error('Error updating cell:', err);
-                setError(err instanceof Error ? err.message : 'Failed to update sponsor');
-                return originalRow;
-              }
-            }}
-            onProcessRowUpdateError={(error) => {
-              console.error('Error updating row:', error);
-              setError('Failed to update sponsor');
-            }}
+
+
           />
         </div>
       )}
