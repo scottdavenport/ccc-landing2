@@ -44,6 +44,7 @@ export default function SponsorCarousel() {
   const [loading, setLoading] = useState(true);
   const [emblaRef, emblaApi] = useEmblaCarousel(OPTIONS, [AutoPlay(AUTOPLAY_OPTIONS)]);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(0);
   const [selectedSponsor, setSelectedSponsor] = useState<Sponsor | null>(null);
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
@@ -63,6 +64,10 @@ export default function SponsorCarousel() {
     const updateScrollState = () => {
       setCanScrollPrev(emblaApi.canScrollPrev());
       setCanScrollNext(emblaApi.canScrollNext());
+      
+      // Update scroll progress
+      const progress = Math.max(0, Math.min(1, emblaApi.scrollProgress()));
+      setScrollProgress(progress * 100);
     };
 
     emblaApi.on('select', onSelect);
@@ -232,19 +237,23 @@ export default function SponsorCarousel() {
             <ChevronRight className="w-6 h-6 text-gray-700" />
           </button>
 
-          {/* Navigation Dots */}
-          <div className="flex justify-center gap-2 mt-6">
-            {sponsors.map((_, index) => (
-              <button
-                key={index}
-                className={cn(
-                  'w-2 h-2 rounded-full transition-all duration-200',
-                  selectedIndex === index ? 'bg-blue-500 w-4' : 'bg-gray-300 hover:bg-gray-400'
-                )}
-                onClick={() => emblaApi?.scrollTo(index)}
-                aria-label={`Go to slide ${index + 1}`}
+          {/* Progress Bar */}
+          <div className="mt-8 px-4">
+            <div className="h-1 w-full bg-gray-100 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-blue-500 transition-all duration-300 ease-out rounded-full"
+                style={{ width: `${scrollProgress}%` }}
               />
-            ))}
+            </div>
+            <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
+              <span>{selectedIndex + 1} of {sponsors.length}</span>
+              <button 
+                onClick={() => emblaApi?.scrollTo(0)}
+                className="text-blue-500 hover:text-blue-600 font-medium"
+              >
+                Reset
+              </button>
+            </div>
           </div>
         </div>
 
