@@ -443,7 +443,7 @@ export function SponsorsTable() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-left">
         <Button
           onClick={() => setIsAddSponsorOpen(true)}
           className="flex items-center gap-2"
