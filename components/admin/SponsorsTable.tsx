@@ -25,22 +25,20 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase/client';
-import { Database } from '@/lib/supabase/database.types';
-import { AddSponsorDialog } from './AddSponsorDialog';
 import { SponsorLogoDialog } from './SponsorLogoDialog';
 
-// Base sponsor type from database
-type Sponsor = Database['api']['Tables']['sponsors']['Row'];
-
 // Extended type that includes joined sponsor_levels data and editing state
-type SponsorWithLevel = Sponsor & {
-  sponsor_levels?: {
-    name: string;
-  } | null;
-  level_name: string;
-  isEditing?: boolean;
-  id: string; // Required for MUI DataGrid
+type SponsorWithLevel = {
+  id: string;
+  name: string;
+  year: number;
   created_at: string;
+  cloudinary_public_id?: string;
+  image_url?: string;
+  isEditing?: boolean;
+  level: string;
+  level_name?: string;
+  level_amount?: number;
 };
 
 function LoadingSpinner() {
@@ -51,44 +49,39 @@ function LoadingSpinner() {
   );
 }
 
-export default function SponsorsTable() {
+interface SponsorsTableProps {
+  onAddSponsor: () => void;
+}
+
+export default function SponsorsTable({ onAddSponsor }: SponsorsTableProps) {
   const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
-  const [isAddSponsorOpen, setIsAddSponsorOpen] = useState(false);
   const [sponsors, setSponsors] = useState<SponsorWithLevel[]>([]);
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const fetchSponsors = async () => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('sponsors')
-        .select(
-          `
+        .select(`
           *,
-          sponsor_levels (name)
-        `
-        )
+          sponsor_levels (name, amount)
+        `)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       if (!data) {
         setSponsors([]);
         return;
       }
 
-      console.log('Sponsors data:', data); // Debug log
-      const sponsorsWithLevelNames = (data as SponsorWithLevel[]).map(sponsor => ({
-        ...sponsor,
-        level_name: sponsor.sponsor_levels?.name || 'Unknown',
-      }));
-      console.log('Processed sponsors:', sponsorsWithLevelNames); // Debug log
-
-      setSponsors(sponsorsWithLevelNames);
+      console.log('Sponsors with levels:', data);
+      setSponsors(data);
     } catch (err) {
       console.error('Error fetching sponsors:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch sponsors');
@@ -162,12 +155,16 @@ export default function SponsorsTable() {
       align: 'left',
     },
     {
-      field: 'level_name',
+      field: 'sponsor_levels',
       headerName: 'Level',
-      flex: 0.7,
-      minWidth: 120,
+      flex: 1,
+      minWidth: 200,
       headerAlign: 'center',
       align: 'center',
+      renderCell: (params) => {
+        const level = params.row.sponsor_levels;
+        return level ? `${level.name} ($${level.amount})` : 'Unknown Level';
+      },
     },
     {
       field: 'year',
@@ -305,43 +302,47 @@ export default function SponsorsTable() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Sponsors</h2>
-        <div className="flex gap-2">
-          {selectedRows.length > 0 && (
-            <Button
-              variant="destructive"
-              onClick={() => setShowDeleteDialog(true)}
-              className="gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete Selected ({selectedRows.length})
-            </Button>
-          )}
-          <Button onClick={() => setIsAddSponsorOpen(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Add Sponsor
-          </Button>
-        </div>
-      </div>
-
       {error && <div className="bg-destructive/10 text-destructive p-4 rounded-lg">{error}</div>}
 
       {isLoading ? (
         <LoadingSpinner />
-      ) : (
-        <div className="border rounded-lg" style={{ height: 500 }}>
-          <DataGrid
-            rows={sponsors}
-            columns={columns}
-            checkboxSelection
-            disableRowSelectionOnClick
-            rowSelectionModel={selectedRows}
-            onRowSelectionModelChange={newSelection => {
-              setSelectedRows(newSelection);
-            }}
-          />
+      ) : sponsors.length === 0 ? (
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No sponsors yet</h3>
+          <p className="text-gray-500 mb-4">Get started by adding your first sponsor</p>
+          <Button onClick={onAddSponsor} className="gap-2">
+            <Plus className="w-4 h-4" />
+            Add Sponsor
+          </Button>
         </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-end gap-2">
+            {selectedRows.length > 0 && (
+              <Button
+                variant="destructive"
+                onClick={() => setShowDeleteDialog(true)}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Selected ({selectedRows.length})
+              </Button>
+            )}
+          </div>
+
+          <div className="border rounded-lg" style={{ height: 500 }}>
+            <DataGrid
+              rows={sponsors}
+              columns={columns}
+              checkboxSelection
+              disableRowSelectionOnClick
+              rowSelectionModel={selectedRows}
+              onRowSelectionModelChange={newSelection => {
+                setSelectedRows(newSelection);
+              }}
+            />
+          </div>
+        </>
       )}
 
       <SponsorLogoDialog
@@ -351,11 +352,7 @@ export default function SponsorsTable() {
         sponsorName={sponsors.find(s => s.id === selectedSponsorId)?.name || ''}
       />
 
-      <AddSponsorDialog
-        isOpen={isAddSponsorOpen}
-        onClose={() => setIsAddSponsorOpen(false)}
-        onSponsorAdded={fetchSponsors}
-      />
+
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>

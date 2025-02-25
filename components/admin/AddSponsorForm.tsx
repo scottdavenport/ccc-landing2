@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
 import { supabase } from '@/lib/supabase/client';
-import { Database } from '@/lib/supabase/database.types';
 
-type SponsorLevel = Database['api']['Tables']['sponsor_levels']['Row'];
+type SponsorLevel = {
+  id: string;
+  name: string;
+  amount: number;
+};
 
 function LoadingSpinner() {
   return (
@@ -220,7 +222,7 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
               >
                 {levels.map(level => (
                   <option key={level.id} value={level.id}>
-                    {level.name}
+                    {level.name} (${level.amount.toLocaleString()})
                   </option>
                 ))}
               </select>
