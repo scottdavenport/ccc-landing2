@@ -12,12 +12,23 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get('logo') as File;
+    const oldPublicId = formData.get('oldPublicId') as string;
 
     if (!file) {
       return NextResponse.json(
         { error: 'No file provided' },
         { status: 400 }
       );
+    }
+
+    // If there's an old image, delete it first
+    if (oldPublicId) {
+      try {
+        await cloudinary.uploader.destroy(oldPublicId);
+      } catch (deleteError) {
+        console.error('Error deleting old image:', deleteError);
+        // Continue with upload even if delete fails
+      }
     }
 
     // Convert File to buffer

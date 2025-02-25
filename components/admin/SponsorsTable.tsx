@@ -6,37 +6,32 @@
  * and Supabase for data management.
  */
 
-'use client'; // Mark as client-side component for Next.js
+'use client';
 
-// Core React and Next.js imports
-import { useEffect, useState } from 'react';  // For managing component state and side effects
-import Image from 'next/image';               // Next.js optimized image component
+import { useEffect, useState } from 'react';
+import Image from 'next/image';
+import { ColumnDef } from '@tanstack/react-table';
+import { Save, X, Upload } from 'lucide-react';
 
-// Database and type imports
-import { supabase } from '@/lib/supabase/client';        // Supabase client for database operations
-import { Database } from '@/lib/supabase/database.types'; // TypeScript types for database schema [dig deeper]
-
-// UI Components
-import { Button } from '@/components/ui/button';         // Reusable button component
-import { Upload } from 'lucide-react';                  // Upload icon [dig deeper]
-import { SponsorLogoDialog } from './SponsorLogoDialog'; // Dialog for logo uploads
+import { supabase } from '@/lib/supabase/client';
+import { Database } from '@/lib/supabase/database.types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { DataTable } from '@/components/ui/data-table';
+import { SponsorLogoDialog } from './SponsorLogoDialog';
 
 // Base sponsor type from database
 type Sponsor = Database['api']['Tables']['sponsors']['Row'];
 
-// Extended type that includes joined sponsor_levels data
+// Extended type that includes joined sponsor_levels data and editing state
 type SponsorWithLevel = Sponsor & {
   sponsor_levels?: {
     name: string;
   } | null;
+  level_name: string;
+  isEditing?: boolean;
 };
 
-/**
- * LoadingSpinner Component
- * 
- * A simple loading indicator that shows a spinning animation.
- * Used while the sponsors data is being fetched from the database. [dig deeper]
- */
 function LoadingSpinner() {
   return (
     <div className="flex items-center justify-center py-4">
@@ -45,108 +40,351 @@ function LoadingSpinner() {
   );
 }
 
-/**
- * SponsorsTable Component
- * 
- * Main component that manages the sponsors table UI and data.
- * Handles loading states, errors, and logo upload functionality.
- */
-export function SponsorsTable() {
-  // State for tracking which sponsor's logo is being uploaded
-  const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
+type CellEditProps = {
+  value: string;
+  row: SponsorWithLevel;
+  column: keyof SponsorWithLevel;
+  onSave: (value: string) => void;
+};
 
-  /**
-   * Handles the click event when a user wants to upload a logo.
-   * Sets the selected sponsor ID which triggers the upload dialog.
-   */
+function YearPickerCell({ value: initialValue, onSave }: CellEditProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [year, setYear] = useState(initialValue);
+  const [error, setError] = useState<string | null>(null);
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 30 }, (_, i) => currentYear - i);
+
+  const handleYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setYear(value);
+    setShowDropdown(true);
+    
+    if (value.length === 4 && /^\d{4}$/.test(value)) {
+      const yearNum = parseInt(value);
+      if (yearNum >= 1900 && yearNum <= currentYear) {
+        setError(null);
+      } else {
+        setError(`Year must be between 1900 and ${currentYear}`);
+      }
+    } else {
+      setError('Please enter a valid 4-digit year');
+    }
+  };
+
+  const handleYearSelect = (selectedYear: number) => {
+    setYear(String(selectedYear));
+    setError(null);
+    setShowDropdown(false);
+  };
+
+  const handleSave = () => {
+    if (!error && year.length === 4) {
+      onSave(year);
+      setIsEditing(false);
+      setShowDropdown(false);
+    }
+  };
+
+  const handleInputFocus = () => {
+    setShowDropdown(true);
+  };
+
+  if (isEditing) {
+    return (
+      <div className="relative w-full">
+        <div className="flex items-center justify-center gap-2">
+          <div className="relative">
+            <Input
+              value={year}
+              onChange={handleYearChange}
+              onFocus={handleInputFocus}
+              className="h-8 w-24 text-center"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !error) handleSave();
+                if (e.key === 'Escape') {
+                  setIsEditing(false);
+                  setShowDropdown(false);
+                }
+              }}
+            />
+            {showDropdown && (
+              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-background border rounded-md shadow-lg w-24 max-h-32 overflow-y-auto z-10">
+                {years.map((y) => (
+                  <div
+                    key={y}
+                    className="px-2 py-1 cursor-pointer hover:bg-muted text-center"
+                    onClick={() => handleYearSelect(y)}
+                  >
+                    {y}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            onClick={handleSave}
+            disabled={!!error}
+          >
+            <Save className="h-4 w-4" />
+          </Button>
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            onClick={() => {
+              setIsEditing(false);
+              setShowDropdown(false);
+              setYear(initialValue); // Reset to initial value on cancel
+            }}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        {error && (
+          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 text-xs text-destructive text-center w-full">
+            {error}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-center w-full">
+      <span 
+        onClick={() => setIsEditing(true)}
+        className="cursor-pointer hover:text-primary transition-colors"
+      >
+        {year}
+      </span>
+    </div>
+  );
+}
+
+function EditableCell({ value: initialValue, onSave }: CellEditProps) {
+  const [value, setValue] = useState(initialValue);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const handleSave = () => {
+    onSave(value);
+    setIsEditing(false);
+  };
+
+  if (isEditing) {
+    return (
+      <div className="flex items-center gap-2">
+        <Input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="h-8"
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleSave();
+            if (e.key === 'Escape') setIsEditing(false);
+          }}
+        />
+        <Button size="icon" variant="ghost" onClick={handleSave}>
+          <Save className="h-4 w-4" />
+        </Button>
+        <Button size="icon" variant="ghost" onClick={() => setIsEditing(false)}>
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-center w-full">
+      <span 
+        onClick={() => setIsEditing(true)}
+        className="cursor-pointer hover:text-primary transition-colors text-base"
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+export function SponsorsTable() {
+  const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
+  const [sponsors, setSponsors] = useState<SponsorWithLevel[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const handleUploadClick = (sponsorId: string) => {
     setSelectedSponsorId(sponsorId);
   };
 
-  /**
-   * Handles the logo upload process for a sponsor.
-   * This is a multi-step process:
-   * 1. Uploads the file to Cloudinary through our API
-   * 2. Updates the sponsor record in Supabase with the new image details
-   * 3. Updates the local UI state to show the new logo
-   * 
-   * @param file - The image file selected by the user
-   */
+  const handleCellEdit = async (sponsorId: string, field: keyof SponsorWithLevel, value: string) => {
+    try {
+      const { error } = await supabase
+        .from('sponsors')
+        .update({ [field]: value })
+        .eq('id', sponsorId);
+
+      if (error) throw error;
+
+      setSponsors(prev => prev.map(sponsor => 
+        sponsor.id === sponsorId 
+          ? { ...sponsor, [field]: value }
+          : sponsor
+      ));
+    } catch (err) {
+      console.error(`Error updating ${field}:`, err);
+      throw new Error(`Failed to update ${field}`);
+    }
+  };
+
   const handleUpload = async (file: File) => {
     if (!selectedSponsorId) return;
     try {
-      // Step 1: Upload to Cloudinary via our API
-      // We use FormData to send the file in a multipart request
+      // Find current sponsor to get old image info
+      const currentSponsor = sponsors.find(s => s.id === selectedSponsorId);
+      const oldPublicId = currentSponsor?.cloudinary_public_id;
+
       const formData = new FormData();
       formData.append('logo', file);
+      
+      // If replacing, add the old public_id to delete
+      if (oldPublicId) {
+        formData.append('oldPublicId', oldPublicId);
+      }
 
-      // Step 1: Upload to Cloudinary via fetch API
-      // fetch throws its own type of error handling with response.ok
       const uploadResponse = await fetch('/api/sponsors/logo', {
         method: 'POST',
         body: formData,
       });
 
-      // fetch API specific error checking
       if (!uploadResponse.ok) {
         throw new Error('Failed to upload logo');
       }
 
-      // Get the Cloudinary URLs and IDs from the response
       const { image_url, cloudinary_public_id } = await uploadResponse.json();
 
-      // Step 2: Update the sponsor record in Supabase
-      // Supabase has its own error handling pattern
-      // It returns an object with { data, error } structure
-      const { data, error } = await supabase  // Note: Supabase always returns { data, error }
-        .from('sponsors')      // Select the sponsors table
-        .update({              // Update these fields
-          image_url,           // The URL where the image can be accessed
-          cloudinary_public_id // Cloudinary's unique ID for the image
+      const { error } = await supabase
+        .from('sponsors')
+        .update({
+          image_url,
+          cloudinary_public_id
         })
-        .eq('id', selectedSponsorId);  // Only update the sponsor with this ID
+        .eq('id', selectedSponsorId);
 
-      // Supabase specific error checking
-      // If error exists, it means the Supabase operation failed
-      if (error) throw error;  // This error is from Supabase, not from fetch or other services
+      if (error) throw error;
 
-      // Step 3: Update local state to reflect the new logo immediately
-      setSponsors(prev => {  // 'prev' contains the current list of sponsors
-        // Use map to create a new array where we update just one sponsor
-        return prev.map(sponsor => {
-          // For each sponsor, check if this is the one we just updated
-          if (sponsor.id === selectedSponsorId) {
-            // If it matches, create a new sponsor object with updated image info
-            return { 
-              ...sponsor,              // Keep all existing sponsor properties
-              image_url,              // Add the new image URL
-              cloudinary_public_id    // Add the new Cloudinary ID
-            };
-          }
-          // If it's not the sponsor we're updating, keep it unchanged
-          return sponsor;
-        });
-      });
+      setSponsors(prev => prev.map(sponsor => 
+        sponsor.id === selectedSponsorId
+          ? { ...sponsor, image_url, cloudinary_public_id }
+          : sponsor
+      ));
     } catch (err) {
       console.error('Error uploading logo:', err);
       throw new Error('Failed to upload logo');
     } finally {
-      // Clean up: reset the selected sponsor regardless of success/failure
       setSelectedSponsorId(null);
     }
   };
-  // State for managing the list of sponsors and UI states
-  const [sponsors, setSponsors] = useState<(Sponsor & { level_name: string })[]>([]); // Sponsors array with level names
-  const [isLoading, setIsLoading] = useState(true);  // Loading state for showing spinner
-  const [error, setError] = useState<string | null>(null);  // Error state for showing error messages
 
-  // useEffect hook to fetch sponsors when component mounts
+  const columns: ColumnDef<SponsorWithLevel>[] = [
+    {
+      accessorKey: 'name',
+      header: () => <div className="text-center w-full text-lg font-bold">Name</div>,
+      cell: ({ row, getValue }) => (
+        <EditableCell
+          value={getValue() as string}
+          row={row.original}
+          column="name"
+          onSave={(value) => handleCellEdit(row.original.id, 'name', value)}
+        />
+      )
+    },
+    {
+      accessorKey: 'level_name',
+      header: () => <div className="text-center w-full text-lg font-bold">Level</div>,
+      cell: ({ row, getValue }) => (
+        <EditableCell
+          value={getValue() as string}
+          row={row.original}
+          column="level_name"
+          onSave={(value) => handleCellEdit(row.original.id, 'level_name', value)}
+        />
+      )
+    },
+    {
+      accessorKey: 'year',
+      header: () => <div className="text-center w-full text-lg font-bold">Year</div>,
+      cell: ({ row, getValue }) => (
+        <YearPickerCell
+          value={String(getValue())}
+          row={row.original}
+          column="year"
+          onSave={(value) => handleCellEdit(row.original.id, 'year', value)}
+        />
+      )
+    },
+    {
+      id: 'logo',
+      header: () => <div className="text-center w-full text-lg font-bold">Logo</div>,
+      cell: ({ row }) => {
+        const sponsor = row.original;
+        return (
+          <div className="flex items-center justify-center w-full py-4">
+            {sponsor.image_url ? (
+              <div 
+                className="relative w-24 h-24 hover:scale-110 transition-transform cursor-pointer group"
+                onClick={() => handleUploadClick(sponsor.id)}
+              >
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-lg flex items-center justify-center">
+                  <Upload className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                </div>
+                <Image
+                  src={sponsor.image_url}
+                  alt={`${sponsor.name} logo`}
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 96px) 100vw, 96px"
+                />
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleUploadClick(sponsor.id)}
+                className="gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                Upload
+              </Button>
+            )}
+          </div>
+        );
+      }
+    },
+    {
+      accessorKey: 'created_at',
+      header: () => <div className="text-center w-full text-lg font-bold">Added</div>,
+      cell: ({ getValue }) => {
+        const date = new Date(getValue() as string);
+        return (
+          <div className="flex items-center justify-center w-full">
+            <span className="text-base">
+              {date.toLocaleString('en-US', {
+                dateStyle: 'medium',
+                timeStyle: 'short'
+              })}
+            </span>
+          </div>
+        );
+      }
+    }
+  ];
+
   useEffect(() => {
-    // Separate async function because useEffect callback cannot be async
     async function fetchSponsors() {
       try {
-        // Fetch sponsors data from Supabase
-        // Using join to get sponsor level names in the same query
         const { data, error } = await supabase
           .from('sponsors')
           .select(`
@@ -155,48 +393,38 @@ export function SponsorsTable() {
               name
             )
           `)
-          .order('name');   // Order results by sponsor name
+          .order('name');
 
-        // Handle Supabase errors
         if (error) {
           throw error;
         }
 
-        // Handle case where no data is returned
         if (!data) {
           setSponsors([]);
           return;
         }
 
-        // Cast the data to include the joined sponsor_levels
         const sponsorsWithLevelNames = (data as SponsorWithLevel[]).map(sponsor => ({
-          ...sponsor,  // Spread all sponsor properties
-          // Get level name from joined data, fallback to 'Unknown'
+          ...sponsor,
           level_name: sponsor.sponsor_levels?.name || 'Unknown'
         }));
 
-        // Update state with transformed data
         setSponsors(sponsorsWithLevelNames);
       } catch (err) {
-        // Log error and update error state for UI
         console.error('Error fetching sponsors:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch sponsors');
       } finally {
-        // Always mark loading as complete, whether successful or not
         setIsLoading(false);
       }
     }
 
-    // Call the fetch function when component mounts
     fetchSponsors();
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
-  // 1. Loading State: Show spinner while data is being fetched
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
-  // 2. Error State: Show error message if something went wrong
   if (error) {
     return (
       <div className="p-4 bg-destructive/10 text-destructive rounded-lg">
@@ -205,7 +433,6 @@ export function SponsorsTable() {
     );
   }
 
-  // 3. Empty State: Show message when no sponsors exist
   if (sponsors.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -214,10 +441,8 @@ export function SponsorsTable() {
     );
   }
 
-  // 4. Main Render: Show the sponsors table
   return (
-    <div className="overflow-x-auto">  {/* Enables horizontal scrolling if table is too wide */}
-      {/* Conditional render of the logo upload dialog */}
+    <div className="space-y-4">
       {selectedSponsorId && (
         <SponsorLogoDialog
           isOpen={true}
@@ -227,76 +452,12 @@ export function SponsorsTable() {
         />
       )}
 
-      {/* Main sponsors table */}
-      <table className="min-w-full divide-y divide-border">
-        {/* Table Header */}
-        <thead className="bg-muted/50">
-          <tr>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Name
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Level
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Year
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Added
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Logo
-            </th>
-          </tr>
-        </thead>
-
-        {/* Table Body */}
-        <tbody className="bg-background divide-y divide-border">
-          {/* Map through sponsors array to create table rows */}
-          {sponsors.map((sponsor) => (
-            <tr key={sponsor.id} className="hover:bg-muted/50 transition-colors">
-              {/* Other Data Columns */}
-              <td className="px-6 py-4 whitespace-nowrap text-sm">
-                {sponsor.name}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm">
-                {sponsor.level_name}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm">
-                {sponsor.year}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                {new Date(sponsor.created_at).toLocaleDateString()}
-              </td>
-              {/* Logo Column: Shows either the logo image or upload button */}
-              <td className="px-6 py-4 whitespace-nowrap text-sm">
-                {sponsor.image_url ? (
-                  // If sponsor has a logo, display it
-                  <div className="relative w-12 h-12">  {/* Container for Next.js Image */}
-                    <Image
-                      src={sponsor.image_url}
-                      alt={`${sponsor.name} logo`}
-                      fill                    // Makes image fill container
-                      className="object-contain"  // Maintains aspect ratio
-                    />
-                  </div>
-                ) : (
-                  // If no logo, show upload button
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleUploadClick(sponsor.id)}
-                    className="gap-2"
-                  >
-                    <Upload className="w-4 h-4" />
-                    Upload
-                  </Button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <DataTable
+        columns={columns}
+        data={sponsors}
+        searchKey="name"
+        className="[&>thead>tr>th]:py-4 [&>thead]:bg-muted/50 [&>tbody>tr>td]:py-3 [&>tbody>tr>td]:text-base"
+      />
     </div>
   );
 }
