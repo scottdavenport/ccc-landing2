@@ -11,7 +11,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { ColumnDef } from '@tanstack/react-table';
-import { Save, X, Upload, Plus } from 'lucide-react';
+import { Save, X, Upload, Plus, Trash2 } from 'lucide-react';
 
 import { supabase } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/database.types';
@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { DataTable } from '@/components/ui/data-table';
 import { SponsorLogoDialog } from './SponsorLogoDialog';
 import { AddSponsorDialog } from './AddSponsorDialog';
+import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
 // Base sponsor type from database
 type Sponsor = Database['api']['Tables']['sponsors']['Row'];
@@ -213,6 +214,12 @@ function EditableCell({ value: initialValue, onSave }: CellEditProps) {
 export function SponsorsTable() {
   const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
   const [isAddSponsorOpen, setIsAddSponsorOpen] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [deleteDialogState, setDeleteDialogState] = useState<{
+    isOpen: boolean;
+    sponsorIds: string[];
+    isDeleting: boolean;
+  }>({ isOpen: false, sponsorIds: [], isDeleting: false });
   const [sponsors, setSponsors] = useState<SponsorWithLevel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -247,6 +254,58 @@ export function SponsorsTable() {
       setError(err instanceof Error ? err.message : 'Failed to fetch sponsors');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteClick = async (sponsorIds: string[]) => {
+    setDeleteDialogState({
+      isOpen: true,
+      sponsorIds,
+      isDeleting: false
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    const { sponsorIds } = deleteDialogState;
+    setDeleteDialogState(prev => ({ ...prev, isDeleting: true }));
+
+    try {
+      // Delete from Supabase
+      const { error } = await supabase
+        .from('sponsors')
+        .delete()
+        .in('id', sponsorIds);
+
+      if (error) throw error;
+
+      // Delete logos from Cloudinary
+      const sponsorsToDelete = sponsors.filter(s => sponsorIds.includes(s.id));
+      const publicIds = sponsorsToDelete
+        .map(s => s.cloudinary_public_id)
+        .filter(Boolean) as string[];
+
+      if (publicIds.length > 0) {
+        const formData = new FormData();
+        publicIds.forEach(id => formData.append('publicIds[]', id));
+
+        const deleteResponse = await fetch('/api/sponsors/logo', {
+          method: 'DELETE',
+          body: formData,
+        });
+
+        if (!deleteResponse.ok) {
+          throw new Error('Failed to delete logos from Cloudinary');
+        }
+      }
+
+      // Update local state
+      setSponsors(prev => prev.filter(s => !sponsorIds.includes(s.id)));
+      setSelectedRows([]);
+    } catch (err) {
+      console.error('Error deleting sponsors:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete sponsors');
+    } finally {
+      setDeleteDialogState({ isOpen: false, sponsorIds: [], isDeleting: false });
     }
   };
 
@@ -324,6 +383,27 @@ export function SponsorsTable() {
   };
 
   const columns: ColumnDef<SponsorWithLevel>[] = [
+    {
+      id: 'select',
+      header: ({ table }) => (
+        <input
+          type="checkbox"
+          checked={table.getIsAllRowsSelected()}
+          onChange={table.getToggleAllRowsSelectedHandler()}
+          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+        />
+      ),
+      cell: ({ row }) => (
+        <input
+          type="checkbox"
+          checked={row.getIsSelected()}
+          onChange={row.getToggleSelectedHandler()}
+          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
     {
       accessorKey: 'name',
       header: () => <div className="text-center w-full text-lg font-bold">Name</div>,
@@ -443,7 +523,7 @@ export function SponsorsTable() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-left">
+      <div className="flex justify-between items-center">
         <Button
           onClick={() => setIsAddSponsorOpen(true)}
           className="flex items-center gap-2"
@@ -451,6 +531,17 @@ export function SponsorsTable() {
           <Plus className="w-4 h-4" />
           Add New Sponsor
         </Button>
+
+        {selectedRows.length > 0 && (
+          <Button
+            variant="destructive"
+            onClick={() => handleDeleteClick(selectedRows)}
+            className="flex items-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete Selected ({selectedRows.length})
+          </Button>
+        )}
       </div>
 
       <DataTable
@@ -458,6 +549,7 @@ export function SponsorsTable() {
         data={sponsors}
         searchKey="name"
         className="[&>thead>tr>th]:py-4 [&>thead]:bg-muted/50 [&>tbody>tr>td]:py-3 [&>tbody>tr>td]:text-base"
+        onRowSelectionChange={setSelectedRows}
       />
 
       {selectedSponsorId && (
@@ -473,6 +565,15 @@ export function SponsorsTable() {
         isOpen={isAddSponsorOpen}
         onClose={() => setIsAddSponsorOpen(false)}
         onSponsorAdded={fetchSponsors}
+      />
+
+      <DeleteConfirmDialog
+        isOpen={deleteDialogState.isOpen}
+        onClose={() => setDeleteDialogState({ isOpen: false, sponsorIds: [], isDeleting: false })}
+        onConfirm={handleDeleteConfirm}
+        title={`Delete ${deleteDialogState.sponsorIds.length === 1 ? 'Sponsor' : 'Sponsors'}`}
+        description={`Are you sure you want to delete ${deleteDialogState.sponsorIds.length === 1 ? 'this sponsor' : 'these sponsors'}? This action cannot be undone.`}
+        isDeleting={deleteDialogState.isDeleting}
       />
     </div>
   );
