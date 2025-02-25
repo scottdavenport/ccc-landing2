@@ -29,18 +29,22 @@ import { Database } from '@/lib/supabase/database.types';
 import { AddSponsorDialog } from './AddSponsorDialog';
 import { SponsorLogoDialog } from './SponsorLogoDialog';
 
-// Base sponsor type from database
+// Base types from database
 type Sponsor = Database['api']['Tables']['sponsors']['Row'];
+type SponsorLevel = Database['api']['Tables']['sponsor_levels']['Row'];
 
 // Extended type that includes joined sponsor_levels data and editing state
-type SponsorWithLevel = Sponsor & {
-  sponsor_levels?: {
-    name: string;
-  } | null;
-  level_name: string;
-  isEditing?: boolean;
-  id: string; // Required for MUI DataGrid
+type SponsorWithLevel = {
+  id: string;
+  name: string;
+  year: number;
   created_at: string;
+  cloudinary_public_id?: string;
+  image_url?: string;
+  isEditing?: boolean;
+  level: string;
+  level_name?: string;
+  level_amount?: number;
 };
 
 function LoadingSpinner() {
@@ -57,42 +61,33 @@ interface SponsorsTableProps {
 
 export default function SponsorsTable({ onAddSponsor }: SponsorsTableProps) {
   const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
-
   const [sponsors, setSponsors] = useState<SponsorWithLevel[]>([]);
+  const [levels, setLevels] = useState<Record<string, { name: string; amount: number }>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const fetchSponsors = async () => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('sponsors')
-        .select(
-          `
+        .select(`
           *,
-          sponsor_levels (name)
-        `
-        )
+          sponsor_levels (name, amount)
+        `)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       if (!data) {
         setSponsors([]);
         return;
       }
 
-      console.log('Sponsors data:', data); // Debug log
-      const sponsorsWithLevelNames = (data as SponsorWithLevel[]).map(sponsor => ({
-        ...sponsor,
-        level_name: sponsor.sponsor_levels?.name || 'Unknown',
-      }));
-      console.log('Processed sponsors:', sponsorsWithLevelNames); // Debug log
-
-      setSponsors(sponsorsWithLevelNames);
+      console.log('Sponsors with levels:', data);
+      setSponsors(data);
     } catch (err) {
       console.error('Error fetching sponsors:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch sponsors');
@@ -166,12 +161,16 @@ export default function SponsorsTable({ onAddSponsor }: SponsorsTableProps) {
       align: 'left',
     },
     {
-      field: 'level_name',
+      field: 'sponsor_levels',
       headerName: 'Level',
-      flex: 0.7,
-      minWidth: 120,
+      flex: 1,
+      minWidth: 200,
       headerAlign: 'center',
       align: 'center',
+      renderCell: (params) => {
+        const level = params.row.sponsor_levels;
+        return level ? `${level.name} ($${level.amount})` : 'Unknown Level';
+      },
     },
     {
       field: 'year',
