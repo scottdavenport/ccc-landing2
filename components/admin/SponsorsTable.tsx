@@ -2,7 +2,7 @@
  * SponsorsTable Component
  * 
  * This component displays a table of sponsors with their logos, names, levels, and other details.
- * It provides functionality to view and upload sponsor logos using Cloudinary for storage
+ * It provides functionality to view, upload, and delete sponsor logos using Cloudinary for storage
  * and Supabase for data management.
  */
 
@@ -10,16 +10,15 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { ColumnDef } from '@tanstack/react-table';
-import { Save, X, Upload, Plus } from 'lucide-react';
+import { Upload, Plus, Trash2 } from 'lucide-react';
+import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
 
 import { supabase } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/database.types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { DataTable } from '@/components/ui/data-table';
 import { SponsorLogoDialog } from './SponsorLogoDialog';
 import { AddSponsorDialog } from './AddSponsorDialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 // Base sponsor type from database
 type Sponsor = Database['api']['Tables']['sponsors']['Row'];
@@ -31,6 +30,7 @@ type SponsorWithLevel = Sponsor & {
   } | null;
   level_name: string;
   isEditing?: boolean;
+  id: string; // Required for MUI DataGrid
 };
 
 function LoadingSpinner() {
@@ -41,181 +41,16 @@ function LoadingSpinner() {
   );
 }
 
-type CellEditProps = {
-  value: string;
-  row: SponsorWithLevel;
-  column: keyof SponsorWithLevel;
-  onSave: (value: string) => void;
-};
 
-function YearPickerCell({ value: initialValue, onSave }: CellEditProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [year, setYear] = useState(initialValue);
-  const [error, setError] = useState<string | null>(null);
 
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 30 }, (_, i) => currentYear - i);
-
-  const handleYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setYear(value);
-    setShowDropdown(true);
-    
-    if (value.length === 4 && /^\d{4}$/.test(value)) {
-      const yearNum = parseInt(value);
-      if (yearNum >= 1900 && yearNum <= currentYear) {
-        setError(null);
-      } else {
-        setError(`Year must be between 1900 and ${currentYear}`);
-      }
-    } else {
-      setError('Please enter a valid 4-digit year');
-    }
-  };
-
-  const handleYearSelect = (selectedYear: number) => {
-    setYear(String(selectedYear));
-    setError(null);
-    setShowDropdown(false);
-  };
-
-  const handleSave = () => {
-    if (!error && year.length === 4) {
-      onSave(year);
-      setIsEditing(false);
-      setShowDropdown(false);
-    }
-  };
-
-  const handleInputFocus = () => {
-    setShowDropdown(true);
-  };
-
-  if (isEditing) {
-    return (
-      <div className="relative w-full">
-        <div className="flex items-center justify-center gap-2">
-          <div className="relative">
-            <Input
-              value={year}
-              onChange={handleYearChange}
-              onFocus={handleInputFocus}
-              className="h-8 w-24 text-center"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !error) handleSave();
-                if (e.key === 'Escape') {
-                  setIsEditing(false);
-                  setShowDropdown(false);
-                }
-              }}
-            />
-            {showDropdown && (
-              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-background border rounded-md shadow-lg w-24 max-h-32 overflow-y-auto z-10">
-                {years.map((y) => (
-                  <div
-                    key={y}
-                    className="px-2 py-1 cursor-pointer hover:bg-muted text-center"
-                    onClick={() => handleYearSelect(y)}
-                  >
-                    {y}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <Button 
-            size="icon" 
-            variant="ghost" 
-            onClick={handleSave}
-            disabled={!!error}
-          >
-            <Save className="h-4 w-4" />
-          </Button>
-          <Button 
-            size="icon" 
-            variant="ghost" 
-            onClick={() => {
-              setIsEditing(false);
-              setShowDropdown(false);
-              setYear(initialValue); // Reset to initial value on cancel
-            }}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        {error && (
-          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 text-xs text-destructive text-center w-full">
-            {error}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center justify-center w-full">
-      <span 
-        onClick={() => setIsEditing(true)}
-        className="cursor-pointer hover:text-primary transition-colors"
-      >
-        {year}
-      </span>
-    </div>
-  );
-}
-
-function EditableCell({ value: initialValue, onSave }: CellEditProps) {
-  const [value, setValue] = useState(initialValue);
-  const [isEditing, setIsEditing] = useState(false);
-
-  const handleSave = () => {
-    onSave(value);
-    setIsEditing(false);
-  };
-
-  if (isEditing) {
-    return (
-      <div className="flex items-center gap-2">
-        <Input
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="h-8"
-          autoFocus
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSave();
-            if (e.key === 'Escape') setIsEditing(false);
-          }}
-        />
-        <Button size="icon" variant="ghost" onClick={handleSave}>
-          <Save className="h-4 w-4" />
-        </Button>
-        <Button size="icon" variant="ghost" onClick={() => setIsEditing(false)}>
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center justify-center w-full">
-      <span 
-        onClick={() => setIsEditing(true)}
-        className="cursor-pointer hover:text-primary transition-colors text-base"
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
-
-export function SponsorsTable() {
+export default function SponsorsTable() {
   const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
   const [isAddSponsorOpen, setIsAddSponsorOpen] = useState(false);
   const [sponsors, setSponsors] = useState<SponsorWithLevel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const fetchSponsors = async () => {
     try {
@@ -323,64 +158,47 @@ export function SponsorsTable() {
     }
   };
 
-  const columns: ColumnDef<SponsorWithLevel>[] = [
+  const columns: GridColDef[] = [
     {
-      accessorKey: 'name',
-      header: () => <div className="text-center w-full text-lg font-bold">Name</div>,
-      cell: ({ row, getValue }) => (
-        <EditableCell
-          value={getValue() as string}
-          row={row.original}
-          column="name"
-          onSave={(value) => handleCellEdit(row.original.id, 'name', value)}
-        />
-      )
+      field: 'name',
+      headerName: 'Name',
+      width: 200,
+      editable: true,
     },
     {
-      accessorKey: 'level_name',
-      header: () => <div className="text-center w-full text-lg font-bold">Level</div>,
-      cell: ({ row, getValue }) => (
-        <EditableCell
-          value={getValue() as string}
-          row={row.original}
-          column="level_name"
-          onSave={(value) => handleCellEdit(row.original.id, 'level_name', value)}
-        />
-      )
+      field: 'level_name',
+      headerName: 'Level',
+      width: 150,
     },
     {
-      accessorKey: 'year',
-      header: () => <div className="text-center w-full text-lg font-bold">Year</div>,
-      cell: ({ row, getValue }) => (
-        <YearPickerCell
-          value={String(getValue())}
-          row={row.original}
-          column="year"
-          onSave={(value) => handleCellEdit(row.original.id, 'year', value)}
-        />
-      )
+      field: 'year',
+      headerName: 'Year',
+      width: 100,
+      editable: true,
+      type: 'number',
     },
     {
-      id: 'logo',
-      header: () => <div className="text-center w-full text-lg font-bold">Logo</div>,
-      cell: ({ row }) => {
-        const sponsor = row.original;
+      field: 'image_url',
+      headerName: 'Logo',
+      width: 150,
+      renderCell: (params) => {
+        const sponsor = params.row;
         return (
-          <div className="flex items-center justify-center w-full py-4">
+          <div className="flex items-center justify-center w-full py-2">
             {sponsor.image_url ? (
               <div 
-                className="relative w-24 h-24 hover:scale-110 transition-transform cursor-pointer group"
+                className="relative w-12 h-12 hover:scale-110 transition-transform cursor-pointer group"
                 onClick={() => handleUploadClick(sponsor.id)}
               >
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-lg flex items-center justify-center">
-                  <Upload className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                  <Upload className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
                 </div>
                 <Image
                   src={sponsor.image_url}
                   alt={`${sponsor.name} logo`}
                   fill
                   className="object-contain"
-                  sizes="(max-width: 96px) 100vw, 96px"
+                  sizes="(max-width: 48px) 100vw, 48px"
                 />
               </div>
             ) : (
@@ -388,31 +206,44 @@ export function SponsorsTable() {
                 variant="outline"
                 size="sm"
                 onClick={() => handleUploadClick(sponsor.id)}
-                className="gap-2"
+                className="gap-1"
               >
-                <Upload className="w-4 h-4" />
+                <Upload className="w-3 h-3" />
                 Upload
               </Button>
             )}
           </div>
         );
-      }
+      },
     },
     {
-      accessorKey: 'created_at',
-      header: () => <div className="text-center w-full text-lg font-bold">Added</div>,
-      cell: ({ getValue }) => {
-        const date = new Date(getValue() as string);
-        return (
-          <div className="flex items-center justify-center w-full">
-            <span className="text-base">
-              {date.toLocaleString('en-US', {
-                dateStyle: 'medium',
-                timeStyle: 'short'
-              })}
-            </span>
-          </div>
-        );
+      field: 'actions',
+      headerName: 'Actions',
+      width: 100,
+      sortable: false,
+      renderCell: (params) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => handleDelete([params.row.id])}
+          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      ),
+    },
+    {
+      field: 'created_at',
+      headerName: 'Added',
+      width: 180,
+      type: 'dateTime',
+      valueFormatter: ({ value }) => {
+        if (!value) return '';
+        const date = new Date(value);
+        return date.toLocaleString('en-US', {
+          dateStyle: 'medium',
+          timeStyle: 'short'
+        });
       }
     }
   ];
@@ -441,39 +272,133 @@ export function SponsorsTable() {
     );
   }
 
+  const handleDelete = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    
+    try {
+      // Delete from Supabase
+      const { error } = await supabase
+        .from('sponsors')
+        .delete()
+        .in('id', ids);
+
+      if (error) throw error;
+
+      // Update local state
+      setSponsors(sponsors.filter(sponsor => !ids.includes(sponsor.id)));
+      setSelectedRows([]);
+      setShowDeleteDialog(false);
+    } catch (err) {
+      console.error('Error deleting sponsors:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete sponsors');
+    }
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex justify-left">
-        <Button
-          onClick={() => setIsAddSponsorOpen(true)}
-          className="flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add New Sponsor
-        </Button>
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-bold tracking-tight">Sponsors</h2>
+        <div className="flex gap-2">
+          {selectedRows.length > 0 && (
+            <Button 
+              variant="destructive"
+              onClick={() => setShowDeleteDialog(true)}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Selected ({selectedRows.length})
+            </Button>
+          )}
+          <Button
+            onClick={() => setIsAddSponsorOpen(true)}
+            className="gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Sponsor
+          </Button>
+        </div>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={sponsors}
-        searchKey="name"
-        className="[&>thead>tr>th]:py-4 [&>thead]:bg-muted/50 [&>tbody>tr>td]:py-3 [&>tbody>tr>td]:text-base"
-      />
-
-      {selectedSponsorId && (
-        <SponsorLogoDialog
-          isOpen={true}
-          onClose={() => setSelectedSponsorId(null)}
-          onUpload={handleUpload}
-          sponsorName={sponsors.find(s => s.id === selectedSponsorId)?.name || ''}
-        />
+      {error && (
+        <div className="bg-destructive/10 text-destructive p-4 rounded-lg">
+          {error}
+        </div>
       )}
+
+      {isLoading ? (
+        <LoadingSpinner />
+      ) : (
+        <div className="border rounded-lg" style={{ height: 500 }}>
+          <DataGrid
+            rows={sponsors}
+            columns={columns}
+            checkboxSelection
+            disableRowSelectionOnClick
+            rowSelectionModel={selectedRows}
+            onRowSelectionModelChange={(newSelection) => {
+              setSelectedRows(newSelection);
+            }}
+            processRowUpdate={async (updatedRow: SponsorWithLevel, originalRow: SponsorWithLevel) => {
+              const field = Object.keys(updatedRow).find(key => {
+                const k = key as keyof SponsorWithLevel;
+                return updatedRow[k] !== originalRow[k];
+              }) as keyof SponsorWithLevel;
+              if (!field) return originalRow;
+              
+              try {
+                const value = updatedRow[field];
+                if (value === undefined) return originalRow;
+                
+                // Convert value to string if it's a number or boolean
+                const stringValue = typeof value === 'object' && value !== null ? value.name : String(value);
+                await handleCellEdit(updatedRow.id, field, stringValue);
+                return updatedRow;
+              } catch (err) {
+                console.error('Error updating cell:', err);
+                setError(err instanceof Error ? err.message : 'Failed to update sponsor');
+                return originalRow;
+              }
+            }}
+            onProcessRowUpdateError={(error) => {
+              console.error('Error updating row:', error);
+              setError('Failed to update sponsor');
+            }}
+          />
+        </div>
+      )}
+
+      <SponsorLogoDialog
+        isOpen={!!selectedSponsorId}
+        onClose={() => setSelectedSponsorId(null)}
+        onUpload={handleUpload}
+        sponsorName={sponsors.find(s => s.id === selectedSponsorId)?.name || ''}
+      />
 
       <AddSponsorDialog
         isOpen={isAddSponsorOpen}
         onClose={() => setIsAddSponsorOpen(false)}
         onSponsorAdded={fetchSponsors}
       />
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete {selectedRows.length} selected sponsor{selectedRows.length === 1 ? '' : 's'}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => handleDelete(selectedRows as string[])}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,8 +1,10 @@
 'use client';
 
-import { ThemeProvider } from 'next-themes';
+import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { ReactNode } from 'react';
 import { AuthProvider } from '@/lib/auth';
+import { theme } from '@/lib/mui-theme';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -11,15 +13,17 @@ interface ProvidersProps {
 export function Providers({ children }: ProvidersProps) {
   return (
     <AuthProvider>
-      <ThemeProvider
+      <NextThemesProvider
         attribute="class"
         defaultTheme="light"
         enableSystem={false}
         disableTransitionOnChange
         forcedTheme="light"
       >
-        {children}
-      </ThemeProvider>
+        <MuiThemeProvider theme={theme}>
+          {children}
+        </MuiThemeProvider>
+      </NextThemesProvider>
     </AuthProvider>
   );
 }
