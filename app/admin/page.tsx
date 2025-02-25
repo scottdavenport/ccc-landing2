@@ -1,12 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { AddSponsorForm } from '@/components/admin/AddSponsorForm';
 import { SponsorsTable } from '@/components/admin/SponsorsTable';
 
 
 export default function AdminPage() {
-  const [refreshKey, setRefreshKey] = useState(0);
   return (
     <div className="space-y-6">
       <div className="bg-white shadow rounded-lg p-6">
@@ -58,16 +55,10 @@ export default function AdminPage() {
 
       {/* Sponsor Management */}
       <div className="space-y-6">
-        {/* Add Sponsor Form */}
-        <div className="bg-white/80 backdrop-blur-sm shadow rounded-lg p-6">
-          <h2 className="text-xl font-medium text-gray-900 mb-6">Add New Sponsor</h2>
-          <AddSponsorForm onSponsorAdded={() => setRefreshKey(k => k + 1)} />
-        </div>
-
         {/* Sponsors Table */}
         <div className="bg-white/80 backdrop-blur-sm shadow rounded-lg p-6">
           <h2 className="text-xl font-medium text-gray-900 mb-6">Current Sponsors</h2>
-          <SponsorsTable key={refreshKey} />
+          <SponsorsTable />
         </div>
       </div>
     </div>

@@ -11,7 +11,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { ColumnDef } from '@tanstack/react-table';
-import { Save, X, Upload } from 'lucide-react';
+import { Save, X, Upload, Plus } from 'lucide-react';
 
 import { supabase } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/database.types';
@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DataTable } from '@/components/ui/data-table';
 import { SponsorLogoDialog } from './SponsorLogoDialog';
+import { AddSponsorDialog } from './AddSponsorDialog';
 
 // Base sponsor type from database
 type Sponsor = Database['api']['Tables']['sponsors']['Row'];
@@ -211,9 +212,43 @@ function EditableCell({ value: initialValue, onSave }: CellEditProps) {
 
 export function SponsorsTable() {
   const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
+  const [isAddSponsorOpen, setIsAddSponsorOpen] = useState(false);
   const [sponsors, setSponsors] = useState<SponsorWithLevel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchSponsors = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sponsors')
+        .select(`
+          *,
+          sponsor_levels (name)
+        `)
+        .order('name');
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data) {
+        setSponsors([]);
+        return;
+      }
+
+      const sponsorsWithLevelNames = (data as SponsorWithLevel[]).map(sponsor => ({
+        ...sponsor,
+        level_name: sponsor.sponsor_levels?.name || 'Unknown'
+      }));
+
+      setSponsors(sponsorsWithLevelNames);
+    } catch (err) {
+      console.error('Error fetching sponsors:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch sponsors');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleUploadClick = (sponsorId: string) => {
     setSelectedSponsorId(sponsorId);
@@ -383,41 +418,6 @@ export function SponsorsTable() {
   ];
 
   useEffect(() => {
-    async function fetchSponsors() {
-      try {
-        const { data, error } = await supabase
-          .from('sponsors')
-          .select(`
-            *,
-            sponsor_levels (
-              name
-            )
-          `)
-          .order('name');
-
-        if (error) {
-          throw error;
-        }
-
-        if (!data) {
-          setSponsors([]);
-          return;
-        }
-
-        const sponsorsWithLevelNames = (data as SponsorWithLevel[]).map(sponsor => ({
-          ...sponsor,
-          level_name: sponsor.sponsor_levels?.name || 'Unknown'
-        }));
-
-        setSponsors(sponsorsWithLevelNames);
-      } catch (err) {
-        console.error('Error fetching sponsors:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch sponsors');
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
     fetchSponsors();
   }, []);
 
@@ -443,6 +443,23 @@ export function SponsorsTable() {
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-left">
+        <Button
+          onClick={() => setIsAddSponsorOpen(true)}
+          className="flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Add New Sponsor
+        </Button>
+      </div>
+
+      <DataTable
+        columns={columns}
+        data={sponsors}
+        searchKey="name"
+        className="[&>thead>tr>th]:py-4 [&>thead]:bg-muted/50 [&>tbody>tr>td]:py-3 [&>tbody>tr>td]:text-base"
+      />
+
       {selectedSponsorId && (
         <SponsorLogoDialog
           isOpen={true}
@@ -452,11 +469,10 @@ export function SponsorsTable() {
         />
       )}
 
-      <DataTable
-        columns={columns}
-        data={sponsors}
-        searchKey="name"
-        className="[&>thead>tr>th]:py-4 [&>thead]:bg-muted/50 [&>tbody>tr>td]:py-3 [&>tbody>tr>td]:text-base"
+      <AddSponsorDialog
+        isOpen={isAddSponsorOpen}
+        onClose={() => setIsAddSponsorOpen(false)}
+        onSponsorAdded={fetchSponsors}
       />
     </div>
   );
