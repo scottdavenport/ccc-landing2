@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { Upload } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -82,12 +83,7 @@ export function SponsorLogoDialog({
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   {previewUrl ? (
                     <div className="relative w-48 h-48">
-                      <Image
-                        src={previewUrl}
-                        alt="Logo preview"
-                        fill
-                        className="object-contain"
-                      />
+                      <Image src={previewUrl} alt="Logo preview" fill className="object-contain" />
                     </div>
                   ) : (
                     <>
@@ -95,9 +91,7 @@ export function SponsorLogoDialog({
                       <p className="mb-2 text-sm text-muted-foreground">
                         Click to upload or drag and drop
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        PNG, JPG or GIF
-                      </p>
+                      <p className="text-xs text-muted-foreground">PNG, JPG or GIF</p>
                     </>
                   )}
                 </div>
@@ -112,25 +106,14 @@ export function SponsorLogoDialog({
               </label>
             </div>
 
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
+            {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isUploading}
-            >
+            <Button type="button" variant="outline" onClick={onClose} disabled={isUploading}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={!selectedFile || isUploading}
-              className="gap-2"
-            >
+            <Button type="submit" disabled={!selectedFile || isUploading} className="gap-2">
               {isUploading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />

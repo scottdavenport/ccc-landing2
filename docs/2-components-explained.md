@@ -5,6 +5,7 @@ Let's look at each main component and understand what it does!
 ## Public Components 🌍
 
 ### Hero.tsx
+
 ```tsx
 // This is the big banner at the top of our landing page
 export function Hero() {
@@ -16,26 +17,30 @@ export function Hero() {
   );
 }
 ```
+
 - Shows the main welcome message
 - Has a big eye-catching design
 - Uses Tailwind CSS for styling (those className="..." parts)
 
 ### Sponsors.tsx
+
 ```tsx
 // Shows all our sponsors in a nice grid
 export function Sponsors() {
   return (
     <div className="grid">
-      <SponsorCarousel />  {/* This makes the sponsors slide */}
+      <SponsorCarousel /> {/* This makes the sponsors slide */}
     </div>
   );
 }
 ```
+
 - Displays all our sponsors
 - Uses SponsorCarousel for a sliding effect
 - Makes sponsors look nice and organized
 
 ### FundsRaised.tsx
+
 ```tsx
 // Shows how much money we've collected
 export function FundsRaised() {
@@ -47,6 +52,7 @@ export function FundsRaised() {
   );
 }
 ```
+
 - Shows our fundraising progress
 - Makes big numbers easy to read
 - Will be dynamic in the future
@@ -54,39 +60,38 @@ export function FundsRaised() {
 ## Admin Components 🔒
 
 ### ConnectionStatus.tsx
+
 ```tsx
 // Shows if we're connected to our database
 export function ConnectionStatus() {
   const [status, setStatus] = useState('checking');
-  
+
   useEffect(() => {
     // Checks connection every 30 seconds
     checkConnection();
   }, []);
-  
-  return (
-    <div className={getStatusColor()}>
-      {status === 'connected' ? '✅' : '❌'}
-    </div>
-  );
+
+  return <div className={getStatusColor()}>{status === 'connected' ? '✅' : '❌'}</div>;
 }
 ```
+
 - Shows green when connected to Supabase
 - Shows red if there's a problem
 - Checks connection automatically
 - Uses React hooks (useState and useEffect)
 
 ### AddSponsorForm.tsx
+
 ```tsx
 // The form for adding new sponsors
 export function AddSponsorForm() {
   const [name, setName] = useState('');
-  
+
   async function handleSubmit() {
     // Sends new sponsor to database
     await supabase.from('sponsors').insert({ name });
   }
-  
+
   return (
     <form onSubmit={handleSubmit}>
       <input value={name} onChange={e => setName(e.target.value)} />
@@ -95,22 +100,24 @@ export function AddSponsorForm() {
   );
 }
 ```
+
 - Lets admins add new sponsors
 - Connects to Supabase database
 - Handles form submission
 - Shows success/error messages
 
 ### SponsorsTable.tsx
+
 ```tsx
 // Shows all sponsors in a table format
 export function SponsorsTable() {
   const [sponsors, setSponsors] = useState([]);
-  
+
   useEffect(() => {
     // Gets sponsors when component loads
     loadSponsors();
   }, []);
-  
+
   return (
     <table>
       {sponsors.map(sponsor => (
@@ -125,6 +132,7 @@ export function SponsorsTable() {
   );
 }
 ```
+
 - Shows all sponsors in a table
 - Lets admins edit/delete sponsors
 - Updates in real-time
@@ -135,6 +143,7 @@ export function SponsorsTable() {
 These are small, reusable pieces we use everywhere:
 
 ### Button.tsx
+
 ```tsx
 // A pretty button we can use anywhere
 export function Button({ children, ...props }) {
@@ -145,11 +154,13 @@ export function Button({ children, ...props }) {
   );
 }
 ```
+
 - Makes consistent-looking buttons
 - Changes color when you hover
 - Easy to reuse anywhere
 
 ### Alert.tsx
+
 ```tsx
 // Shows important messages to users
 export function Alert({ title, message, type = 'info' }) {
@@ -161,6 +172,7 @@ export function Alert({ title, message, type = 'info' }) {
   );
 }
 ```
+
 - Shows important messages
 - Can be success, error, or info
 - Used for feedback after actions
@@ -168,21 +180,25 @@ export function Alert({ title, message, type = 'info' }) {
 ## Tips for Working with Components 💡
 
 1. **Components are Like Building Blocks**
+
    - Each component does one specific thing
    - We can combine them to make bigger features
    - They're reusable - use them multiple times!
 
 2. **State Management**
+
    - `useState` keeps track of changing data
    - `useEffect` runs code when things change
    - Always think: "What needs to update?"
 
 3. **Props are Like Settings**
+
    - Props let us customize components
    - Pass them like HTML attributes
    - Check the component to see what props it needs
 
 4. **Styling with Tailwind**
+
    - Classes like `bg-blue-500` mean "blue background"
    - `hover:` classes work when mouse is over
    - `flex` and `grid` help with layout

@@ -1,8 +1,9 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { useState } from 'react';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
+
 import { SponsorLightbox } from './SponsorLightbox';
 
 // Mock sponsor data
@@ -11,35 +12,35 @@ const sponsors = [
     name: 'Tech Corp',
     level: 'Platinum',
     imageUrl: '/sponsor-placeholder.svg',
-    website: 'https://example.com'
+    website: 'https://example.com',
   },
   {
     name: 'Innovation Labs',
     level: 'Gold',
     imageUrl: '/sponsor-placeholder.svg',
-    website: 'https://example.com'
+    website: 'https://example.com',
   },
   {
     name: 'Future Systems',
     level: 'Silver',
     imageUrl: '/sponsor-placeholder.svg',
-    website: 'https://example.com'
+    website: 'https://example.com',
   },
   {
     name: 'Digital Solutions',
     level: 'Bronze',
     imageUrl: '/sponsor-placeholder.svg',
-    website: 'https://example.com'
+    website: 'https://example.com',
   },
 ];
 
 export const Sponsors = () => {
-  const [selectedSponsor, setSelectedSponsor] = useState<typeof sponsors[0] | null>(null);
+  const [selectedSponsor, setSelectedSponsor] = useState<(typeof sponsors)[0] | null>(null);
 
   return (
     <section className="py-16 bg-background">
       <div className="container mx-auto px-4">
-        <motion.h2 
+        <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -47,7 +48,7 @@ export const Sponsors = () => {
         >
           Our Sponsors
         </motion.h2>
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.2 }}

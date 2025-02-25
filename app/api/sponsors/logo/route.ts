@@ -15,10 +15,7 @@ export async function POST(request: Request) {
     const oldPublicId = formData.get('oldPublicId') as string;
 
     if (!file) {
-      return NextResponse.json(
-        { error: 'No file provided' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
     // If there's an old image, delete it first
@@ -41,10 +38,7 @@ export async function POST(request: Request) {
           {
             folder: 'sponsors',
             allowed_formats: ['jpg', 'jpeg', 'png', 'gif'],
-            transformation: [
-              { width: 800, height: 800, crop: 'limit' },
-              { quality: 'auto:good' },
-            ],
+            transformation: [{ width: 800, height: 800, crop: 'limit' }, { quality: 'auto:good' }],
           },
           (error, result) => {
             if (error) reject(error);
@@ -62,10 +56,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Error uploading to Cloudinary:', error);
-    return NextResponse.json(
-      { error: 'Failed to upload image' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });
   }
 }
 

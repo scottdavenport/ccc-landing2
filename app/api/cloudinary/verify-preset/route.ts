@@ -13,22 +13,22 @@ export async function GET() {
     // Get upload preset details
     const presetName = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
     const result = await cloudinary.api.upload_preset(presetName);
-    
+
     return NextResponse.json({
       status: 'success',
       preset: {
         name: result.name,
         folder: result.folder,
         unsigned: !result.signing_required,
-      }
+      },
     });
   } catch (error) {
     console.error('Error verifying upload preset:', error);
     return NextResponse.json(
-      { 
-        status: 'error', 
+      {
+        status: 'error',
         message: error instanceof Error ? error.message : 'Failed to verify upload preset',
-        details: 'Make sure the upload preset exists and is configured as unsigned'
+        details: 'Make sure the upload preset exists and is configured as unsigned',
       },
       { status: 500 }
     );
