@@ -1,6 +1,6 @@
 'use client';
 
-import { SponsorsTable } from '@/components/admin/SponsorsTable';
+import { default as SponsorsTable } from '@/components/admin/SponsorsTable';
 
 
 export default function AdminPage() {
