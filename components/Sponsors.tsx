@@ -11,26 +11,30 @@ const sponsors = [
   {
     name: 'Tech Corp',
     level: 'Platinum',
-    imageUrl: '/sponsor-placeholder.svg',
-    website: 'https://example.com',
+    cloudinary_public_id: '/sponsor-placeholder.svg',
+    amount: 50000,
+    year: 2025,
   },
   {
     name: 'Innovation Labs',
     level: 'Gold',
-    imageUrl: '/sponsor-placeholder.svg',
-    website: 'https://example.com',
+    cloudinary_public_id: '/sponsor-placeholder.svg',
+    amount: 25000,
+    year: 2025,
   },
   {
     name: 'Future Systems',
     level: 'Silver',
-    imageUrl: '/sponsor-placeholder.svg',
-    website: 'https://example.com',
+    cloudinary_public_id: '/sponsor-placeholder.svg',
+    amount: 10000,
+    year: 2025,
   },
   {
     name: 'Digital Solutions',
     level: 'Bronze',
-    imageUrl: '/sponsor-placeholder.svg',
-    website: 'https://example.com',
+    cloudinary_public_id: '/sponsor-placeholder.svg',
+    amount: 5000,
+    year: 2025,
   },
 ];
 
@@ -65,7 +69,7 @@ export const Sponsors = () => {
             >
               <div className="relative w-full h-full p-4">
                 <Image
-                  src={sponsor.imageUrl}
+                  src={sponsor.cloudinary_public_id || '/sponsor-placeholder.svg'}
                   alt={`${sponsor.name} logo`}
                   fill
                   className="object-contain"
