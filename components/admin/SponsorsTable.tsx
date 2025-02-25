@@ -25,13 +25,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase/client';
-import { Database } from '@/lib/supabase/database.types';
-import { AddSponsorDialog } from './AddSponsorDialog';
 import { SponsorLogoDialog } from './SponsorLogoDialog';
-
-// Base types from database
-type Sponsor = Database['api']['Tables']['sponsors']['Row'];
-type SponsorLevel = Database['api']['Tables']['sponsor_levels']['Row'];
 
 // Extended type that includes joined sponsor_levels data and editing state
 type SponsorWithLevel = {
@@ -62,7 +56,7 @@ interface SponsorsTableProps {
 export default function SponsorsTable({ onAddSponsor }: SponsorsTableProps) {
   const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
   const [sponsors, setSponsors] = useState<SponsorWithLevel[]>([]);
-  const [levels, setLevels] = useState<Record<string, { name: string; amount: number }>>({});
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>([]);
