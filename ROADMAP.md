@@ -6,6 +6,8 @@
 - [x] Funds raised section
 - [x] Past winners section
 - [x] Enhanced sponsor carousel with parallax effects and animations
+- [x] Cloudinary integration for optimized image loading
+- [x] Supabase integration for dynamic content
 
 ## Upcoming Features
 - [ ] Improved mobile responsiveness
