@@ -72,17 +72,29 @@ export default function SponsorCarousel() {
       setScrollProgress(progress * 100);
 
       // Update parallax values
-      const engine = emblaApi.internalEngine();
-      const scrollProgress = emblaApi.scrollProgress();
-      const styles = sponsors.map((_, index) => {
-        const slide = engine.location.measurePoints[index];
-        const distance = Math.abs(
-          (scrollProgress * (engine.scrollBody.contentSize - engine.scrollBody.viewportSize)) -
-          slide.distance
-        );
-        return Math.min(1, Math.max(0, 1 - distance / 400)) * 50;
-      });
-      setParallaxValues(styles);
+      try {
+        const engine = emblaApi.internalEngine();
+        const scrollProgress = emblaApi.scrollProgress();
+        
+        if (engine?.location?.measurePoints && Array.isArray(engine.location.measurePoints)) {
+          const styles = sponsors.map((_, index) => {
+            const slide = engine.location.measurePoints[index];
+            if (!slide) return 0;
+            
+            const viewportSize = engine.scrollBody?.viewportSize || 0;
+            const contentSize = engine.scrollBody?.contentSize || 0;
+            const distance = Math.abs(
+              (scrollProgress * (contentSize - viewportSize)) -
+              slide.distance
+            );
+            return Math.min(1, Math.max(0, 1 - distance / 400)) * 50;
+          });
+          setParallaxValues(styles);
+        }
+      } catch (error) {
+        console.error('Error calculating parallax:', error);
+        setParallaxValues(sponsors.map(() => 0));
+      }
     };
 
     emblaApi.on('select', onSelect);
@@ -185,9 +197,10 @@ export default function SponsorCarousel() {
                     <div
                       className="relative aspect-square cursor-pointer overflow-hidden rounded-xl bg-white p-6 group"
                       style={{
-                        transform: `scale(${1 + (parallaxValues[index] || 0) * 0.001})
-                                  rotate(${(parallaxValues[index] || 0) * 0.05}deg)`,
-                        transition: 'transform 0.2s ease-out'
+                        transform: parallaxValues[index] !== undefined
+                          ? `scale(${1 + parallaxValues[index] * 0.001}) rotate(${parallaxValues[index] * 0.05}deg)`
+                          : 'none',
+                        transition: 'transform 0.3s ease-out'
                       }}
                       onClick={() => setSelectedSponsor(sponsor)}
                       role="button"
