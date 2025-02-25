@@ -58,12 +58,6 @@ export default function AdminPage() {
 
       {/* Sponsor Management */}
       <div className="space-y-6">
-        {/* Add Sponsor Form */}
-        <div className="bg-white/80 backdrop-blur-sm shadow rounded-lg p-6">
-          <h2 className="text-xl font-medium text-gray-900 mb-6">Add New Sponsor</h2>
-          <AddSponsorForm onSponsorAdded={() => setRefreshKey(k => k + 1)} />
-        </div>
-
         {/* Sponsors Table */}
         <div className="bg-white/80 backdrop-blur-sm shadow rounded-lg p-6">
           <h2 className="text-xl font-medium text-gray-900 mb-6">Current Sponsors</h2>
