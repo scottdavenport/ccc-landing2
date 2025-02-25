@@ -22,19 +22,20 @@ const OPTIONS: EmblaOptionsType = {
   loop: true,
   align: 'center',
   containScroll: 'trimSnaps',
-  dragFree: true,
+  dragFree: false,
+  skipSnaps: false,
+  inViewThreshold: 0.6,
   slidesToScroll: 1,
-  inViewThreshold: 0.7,
   breakpoints: {
-    '(min-width: 768px)': {
-      dragFree: false,
-    },
+    '(max-width: 640px)': { dragFree: true },
+    '(min-width: 641px)': { dragFree: false },
   },
 };
 
 const AUTOPLAY_OPTIONS = {
-  delay: 4000,
-  stopOnInteraction: false,
+  delay: 3500,
+  stopOnInteraction: true,
+  stopOnMouseEnter: true,
   rootNode: (emblaRoot: HTMLElement) => emblaRoot.parentElement,
 };
 
@@ -116,7 +117,18 @@ export default function SponsorCarousel() {
   }, []);
 
   if (loading) {
-    return <div className="animate-pulse bg-gray-200 h-64 rounded-lg" />;
+    return (
+      <section className="bg-white py-16">
+        <div className="container mx-auto px-4">
+          <h2 className="text-4xl font-bold text-center mb-12 animate-pulse bg-gray-200 h-10 w-64 mx-auto rounded" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse bg-gray-200 h-64 rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
   }
 
   if (!sponsors.length) {
@@ -135,21 +147,23 @@ export default function SponsorCarousel() {
                 <div
                   key={`${sponsor.name}-${index}`}
                   className={cn(
-                    'flex-[0_0_90%] sm:flex-[0_0_45%] md:flex-[0_0_30%] min-w-0 px-4',
-                    'transition-all duration-300 ease-out',
-                    selectedIndex === index ? 'opacity-100' : 'opacity-70'
+                    'flex-[0_0_100%] sm:flex-[0_0_50%] lg:flex-[0_0_33.33%] min-w-0 px-4',
+                    'transition-all duration-500 ease-out',
+                    selectedIndex === index ? 'opacity-100 scale-100' : 'opacity-80 scale-95'
                   )}
                 >
                   <div
                     className={cn(
                       'bg-white rounded-xl shadow-lg p-6 h-full',
-                      'transition-all duration-300 ease-out transform',
-                      selectedIndex === index ? 'shadow-xl scale-105' : 'shadow-md scale-100',
-                      'hover:shadow-lg hover:scale-[1.02]'
+                      'transition-all duration-500 ease-out transform',
+                      selectedIndex === index 
+                        ? 'shadow-xl scale-105 border-2 border-blue-500/20' 
+                        : 'shadow-md scale-100 border border-gray-100',
+                      'hover:shadow-lg hover:scale-[1.02] hover:border-blue-500/10'
                     )}
                   >
                     <div
-                      className="relative aspect-[3/2] cursor-pointer transition-transform hover:scale-105"
+                      className="relative aspect-square cursor-pointer overflow-hidden rounded-xl bg-white p-6 group"
                       onClick={() => setSelectedSponsor(sponsor)}
                       role="button"
                       tabIndex={0}
@@ -159,18 +173,19 @@ export default function SponsorCarousel() {
                         src={sponsor.imageUrl}
                         alt={`${sponsor.name} logo`}
                         fill
-                        className="object-contain p-4"
+                        className="object-contain p-4 transition-all duration-500 ease-out group-hover:scale-110 group-hover:rotate-[-2deg]"
                         sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                       />
                     </div>
-                    <div className="flex flex-col items-center gap-2 mt-4">
-                      <h3 className="text-lg font-medium text-gray-900">{sponsor.name}</h3>
+                    <div className="flex flex-col items-center gap-3 mt-6">
+                      <h3 className="text-lg font-semibold text-gray-900 text-center">{sponsor.name}</h3>
                       <span
                         className={cn(
                           'px-4 py-1.5 rounded-full text-sm font-medium',
+                          'shadow-sm border transition-colors duration-300',
                           sponsor.level === 'Champion'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-amber-100 text-amber-700'
+                            ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-200'
+                            : 'bg-gradient-to-r from-amber-50 to-amber-100 text-amber-700 border-amber-200'
                         )}
                       >
                         {sponsor.level}
