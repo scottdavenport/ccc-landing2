@@ -1,6 +1,7 @@
 'use client';
 
-import Image from 'next/image';
+import React from 'react';
+import { CldImage } from 'next-cloudinary';
 import * as Dialog from '@radix-ui/react-dialog';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
@@ -13,8 +14,9 @@ type SponsorLightboxProps = {
   sponsor: {
     name: string;
     level: string;
-    imageUrl: string;
-    website?: string;
+    cloudinary_public_id: string | null;
+    amount: number;
+    year: number;
   } | null;
 };
 
@@ -59,14 +61,20 @@ export function SponsorLightbox({ isOpen, onClose, sponsor }: SponsorLightboxPro
                     </Dialog.Close>
 
                     <div className="relative w-full max-h-[50vh] aspect-[3/2] mb-6 bg-gray-50 rounded-lg overflow-hidden">
-                      <Image
-                        src={sponsor.imageUrl}
-                        alt={`${sponsor.name} logo`}
-                        fill
-                        className="object-contain p-4"
-                        sizes="(min-width: 800px) 800px, 90vw"
-                        priority
-                      />
+                      {sponsor.cloudinary_public_id ? (
+                        <CldImage
+                          src={sponsor.cloudinary_public_id}
+                          alt={`${sponsor.name} logo`}
+                          fill
+                          className="object-contain p-4"
+                          sizes="(min-width: 800px) 800px, 90vw"
+                          priority
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          No image available
+                        </div>
+                      )}
                     </div>
 
                     <span
@@ -80,29 +88,12 @@ export function SponsorLightbox({ isOpen, onClose, sponsor }: SponsorLightboxPro
                       {sponsor.level}
                     </span>
 
-                    {sponsor.website && (
-                      <a
-                        href={sponsor.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center text-[#003D5B] hover:text-[#66D1FF] transition-colors"
-                      >
-                        Visit Website
-                        <svg
-                          className="ml-1 h-4 w-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                          />
-                        </svg>
-                      </a>
-                    )}
+                    <div className="text-lg font-bold mb-2">{sponsor.name}</div>
+                    <div className="text-gray-600 mb-4">
+                      {sponsor.amount.toLocaleString()} - {sponsor.year}
+                    </div>
+
+
                   </div>
                 </div>
               </motion.div>

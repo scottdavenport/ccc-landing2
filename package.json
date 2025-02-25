@@ -38,6 +38,7 @@
     "lodash": "^4.17.21",
     "lucide-react": "^0.475.0",
     "next": "15.1.7",
+    "next-cloudinary": "^6.16.0",
     "next-themes": "^0.4.4",
     "postcss-nested": "^7.0.2",
     "react": "^19.0.0",
