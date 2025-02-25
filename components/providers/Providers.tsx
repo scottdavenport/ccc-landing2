@@ -1,8 +1,9 @@
 'use client';
 
-import { ThemeProvider as NextThemesProvider } from 'next-themes';
-import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { ReactNode } from 'react';
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
+import { ThemeProvider as NextThemesProvider } from 'next-themes';
+
 import { AuthProvider } from '@/lib/auth';
 import { theme } from '@/lib/mui-theme';
 
@@ -20,9 +21,7 @@ export function Providers({ children }: ProvidersProps) {
         disableTransitionOnChange
         forcedTheme="light"
       >
-        <MuiThemeProvider theme={theme}>
-          {children}
-        </MuiThemeProvider>
+        <MuiThemeProvider theme={theme}>{children}</MuiThemeProvider>
       </NextThemesProvider>
     </AuthProvider>
   );

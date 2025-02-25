@@ -1,17 +1,20 @@
 # Add Sponsor Modal Feature
 
 ## Overview
+
 This feature moves the "Add New Sponsor" form into a modal dialog, making the admin interface cleaner and more consistent with the logo upload functionality.
 
 ## Changes
 
 ### New Components
+
 1. `AddSponsorDialog.tsx`
    - Modal dialog component that wraps the existing AddSponsorForm
    - Uses the same shadcn/ui Dialog component as the logo upload
    - Handles open/close state and sponsor added callback
 
 ### Modified Components
+
 1. `SponsorsTable.tsx`
    - Removed inline AddSponsorForm
    - Added "Add New Sponsor" button with Plus icon
@@ -21,6 +24,7 @@ This feature moves the "Add New Sponsor" form into a modal dialog, making the ad
 ## Technical Details
 
 ### AddSponsorDialog Props
+
 ```typescript
 interface AddSponsorDialogProps {
   isOpen: boolean;
@@ -30,6 +34,7 @@ interface AddSponsorDialogProps {
 ```
 
 ### SponsorsTable Changes
+
 ```typescript
 // New state for dialog visibility
 const [isAddSponsorOpen, setIsAddSponsorOpen] = useState(false);
@@ -49,6 +54,7 @@ const [isAddSponsorOpen, setIsAddSponsorOpen] = useState(false);
 ```
 
 ## Testing
+
 1. Click "Add New Sponsor" button - should open modal
 2. Form in modal should work exactly as before
 3. After successful submission:
@@ -58,6 +64,7 @@ const [isAddSponsorOpen, setIsAddSponsorOpen] = useState(false);
 5. Verify all form validation still works in modal context
 
 ## Design Decisions
+
 1. Used consistent modal pattern across features
 2. Kept existing form component untouched
 3. Added Plus icon to button for better UX

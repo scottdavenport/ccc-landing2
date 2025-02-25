@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+
+import { useAuth } from '@/lib/auth';
 
 function DebugInfo() {
   return (
@@ -44,14 +45,15 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-ccc-teal py-12 px-4 sm:px-6 lg:px-8">
       <div className="glass-card max-w-md w-full p-8 rounded-lg space-y-8">
         <div>
-          <h2 className="text-center text-3xl font-bold text-foreground">
-            Sign in to CCC Admin
-          </h2>
+          <h2 className="text-center text-3xl font-bold text-foreground">Sign in to CCC Admin</h2>
         </div>
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="email-address" className="block text-sm font-medium text-foreground mb-1">
+              <label
+                htmlFor="email-address"
+                className="block text-sm font-medium text-foreground mb-1"
+              >
                 Email address
               </label>
               <input
@@ -63,7 +65,7 @@ export default function LoginPage() {
                 className="appearance-none block w-full px-3 py-2 border border-border rounded-md shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm"
                 placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
               />
             </div>
             <div>
@@ -79,14 +81,12 @@ export default function LoginPage() {
                 className="appearance-none block w-full px-3 py-2 border border-border rounded-md shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
               />
             </div>
           </div>
 
-          {error && (
-            <div className="text-destructive text-sm">{error}</div>
-          )}
+          {error && <div className="text-destructive text-sm">{error}</div>}
 
           <div>
             <button

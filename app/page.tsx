@@ -2,11 +2,12 @@
 
 // First, we need to bring in all the pieces we'll use to build our page
 // Just like getting all your LEGO pieces before building something
-import { Hero } from "@/components/Hero";              // The big welcome banner at the top
-import { FundsRaised } from "@/components/FundsRaised";  // Shows how much money we've raised
-import { Sponsors } from "@/components/Sponsors";         // Shows all our helpful sponsors
-import { PastWinners } from "@/components/PastWinners";  // Shows previous tournament winners
-import { ErrorBoundary } from "@/components/ErrorBoundary"; // A safety net if something goes wrong
+import { ErrorBoundary } from '@/components/ErrorBoundary'; // A safety net if something goes wrong
+import { FundsRaised } from '@/components/FundsRaised'; // Shows how much money we've raised
+import { Hero } from '@/components/Hero'; // The big welcome banner at the top
+
+import { PastWinners } from '@/components/PastWinners'; // Shows previous tournament winners
+import { Sponsors } from '@/components/Sponsors'; // Shows all our helpful sponsors
 
 // This is our main page - it's like putting all our LEGO pieces together
 const Index = () => {

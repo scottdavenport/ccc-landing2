@@ -1,6 +1,6 @@
 /**
  * SponsorsTable Component
- * 
+ *
  * This component displays a table of sponsors with their logos, names, levels, and other details.
  * It provides functionality to view, upload, and delete sponsor logos using Cloudinary for storage
  * and Supabase for data management.
@@ -10,15 +10,24 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { Upload, Plus, Trash2 } from 'lucide-react';
 import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
+import { Plus, Trash2, Upload } from 'lucide-react';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/database.types';
-import { Button } from '@/components/ui/button';
-import { SponsorLogoDialog } from './SponsorLogoDialog';
 import { AddSponsorDialog } from './AddSponsorDialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { SponsorLogoDialog } from './SponsorLogoDialog';
 
 // Base sponsor type from database
 type Sponsor = Database['api']['Tables']['sponsors']['Row'];
@@ -42,8 +51,6 @@ function LoadingSpinner() {
   );
 }
 
-
-
 export default function SponsorsTable() {
   const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
   const [isAddSponsorOpen, setIsAddSponsorOpen] = useState(false);
@@ -57,10 +64,12 @@ export default function SponsorsTable() {
     try {
       const { data, error } = await supabase
         .from('sponsors')
-        .select(`
+        .select(
+          `
           *,
           sponsor_levels (name)
-        `)
+        `
+        )
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -75,7 +84,7 @@ export default function SponsorsTable() {
       console.log('Sponsors data:', data); // Debug log
       const sponsorsWithLevelNames = (data as SponsorWithLevel[]).map(sponsor => ({
         ...sponsor,
-        level_name: sponsor.sponsor_levels?.name || 'Unknown'
+        level_name: sponsor.sponsor_levels?.name || 'Unknown',
       }));
       console.log('Processed sponsors:', sponsorsWithLevelNames); // Debug log
 
@@ -92,8 +101,6 @@ export default function SponsorsTable() {
     setSelectedSponsorId(sponsorId);
   };
 
-
-
   const handleUpload = async (file: File) => {
     if (!selectedSponsorId) return;
     try {
@@ -103,7 +110,7 @@ export default function SponsorsTable() {
 
       const formData = new FormData();
       formData.append('logo', file);
-      
+
       // If replacing, add the old public_id to delete
       if (oldPublicId) {
         formData.append('oldPublicId', oldPublicId);
@@ -124,17 +131,19 @@ export default function SponsorsTable() {
         .from('sponsors')
         .update({
           image_url,
-          cloudinary_public_id
+          cloudinary_public_id,
         })
         .eq('id', selectedSponsorId);
 
       if (error) throw error;
 
-      setSponsors(prev => prev.map(sponsor => 
-        sponsor.id === selectedSponsorId
-          ? { ...sponsor, image_url, cloudinary_public_id }
-          : sponsor
-      ));
+      setSponsors(prev =>
+        prev.map(sponsor =>
+          sponsor.id === selectedSponsorId
+            ? { ...sponsor, image_url, cloudinary_public_id }
+            : sponsor
+        )
+      );
     } catch (err) {
       console.error('Error uploading logo:', err);
       throw new Error('Failed to upload logo');
@@ -174,12 +183,12 @@ export default function SponsorsTable() {
       flex: 0.8,
       minWidth: 150,
       headerAlign: 'center',
-      renderCell: (params) => {
+      renderCell: params => {
         const sponsor = params.row;
         return (
           <div className="flex items-center justify-center w-full py-2">
             {sponsor.image_url ? (
-              <div 
+              <div
                 className="relative w-12 h-12 hover:scale-110 transition-transform cursor-pointer group"
                 onClick={() => handleUploadClick(sponsor.id)}
               >
@@ -216,7 +225,7 @@ export default function SponsorsTable() {
       minWidth: 160,
       headerAlign: 'center',
       align: 'center',
-      renderCell: (params) => {
+      renderCell: params => {
         try {
           const date = params.row.created_at;
           if (!date) return '-';
@@ -226,14 +235,14 @@ export default function SponsorsTable() {
             day: 'numeric',
             hour: 'numeric',
             minute: '2-digit',
-            hour12: true
+            hour12: true,
           });
           return formattedDate;
         } catch (err) {
           console.error('Error formatting date:', err);
           return '-';
         }
-      }
+      },
     },
     {
       field: 'actions',
@@ -242,7 +251,7 @@ export default function SponsorsTable() {
       sortable: false,
       headerAlign: 'center',
       align: 'center',
-      renderCell: (params) => (
+      renderCell: params => (
         <Button
           variant="ghost"
           size="icon"
@@ -252,7 +261,7 @@ export default function SponsorsTable() {
           <Trash2 className="h-4 w-4" />
         </Button>
       ),
-    }
+    },
   ];
 
   useEffect(() => {
@@ -264,11 +273,7 @@ export default function SponsorsTable() {
   }
 
   if (error) {
-    return (
-      <div className="p-4 bg-destructive/10 text-destructive rounded-lg">
-        {error}
-      </div>
-    );
+    return <div className="p-4 bg-destructive/10 text-destructive rounded-lg">{error}</div>;
   }
 
   if (sponsors.length === 0) {
@@ -281,13 +286,10 @@ export default function SponsorsTable() {
 
   const handleDelete = async (ids: string[]) => {
     if (ids.length === 0) return;
-    
+
     try {
       // Delete from Supabase
-      const { error } = await supabase
-        .from('sponsors')
-        .delete()
-        .in('id', ids);
+      const { error } = await supabase.from('sponsors').delete().in('id', ids);
 
       if (error) throw error;
 
@@ -307,7 +309,7 @@ export default function SponsorsTable() {
         <h2 className="text-3xl font-bold tracking-tight">Sponsors</h2>
         <div className="flex gap-2">
           {selectedRows.length > 0 && (
-            <Button 
+            <Button
               variant="destructive"
               onClick={() => setShowDeleteDialog(true)}
               className="gap-2"
@@ -316,21 +318,14 @@ export default function SponsorsTable() {
               Delete Selected ({selectedRows.length})
             </Button>
           )}
-          <Button
-            onClick={() => setIsAddSponsorOpen(true)}
-            className="gap-2"
-          >
+          <Button onClick={() => setIsAddSponsorOpen(true)} className="gap-2">
             <Plus className="w-4 h-4" />
             Add Sponsor
           </Button>
         </div>
       </div>
 
-      {error && (
-        <div className="bg-destructive/10 text-destructive p-4 rounded-lg">
-          {error}
-        </div>
-      )}
+      {error && <div className="bg-destructive/10 text-destructive p-4 rounded-lg">{error}</div>}
 
       {isLoading ? (
         <LoadingSpinner />
@@ -342,11 +337,9 @@ export default function SponsorsTable() {
             checkboxSelection
             disableRowSelectionOnClick
             rowSelectionModel={selectedRows}
-            onRowSelectionModelChange={(newSelection) => {
+            onRowSelectionModelChange={newSelection => {
               setSelectedRows(newSelection);
             }}
-
-
           />
         </div>
       )}
@@ -369,7 +362,8 @@ export default function SponsorsTable() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete {selectedRows.length} selected sponsor{selectedRows.length === 1 ? '' : 's'}.
+              This action cannot be undone. This will permanently delete {selectedRows.length}{' '}
+              selected sponsor{selectedRows.length === 1 ? '' : 's'}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

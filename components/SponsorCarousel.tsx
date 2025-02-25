@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
-import useEmblaCarousel from 'embla-carousel-react';
 import type { EmblaOptionsType } from 'embla-carousel';
 import AutoPlay from 'embla-carousel-autoplay';
+import useEmblaCarousel from 'embla-carousel-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
 import { cn } from '@/lib/utils';
 import { SponsorLightbox } from './SponsorLightbox';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 type Sponsor = {
   name: string;
@@ -26,9 +27,9 @@ const OPTIONS: EmblaOptionsType = {
   inViewThreshold: 0.7,
   breakpoints: {
     '(min-width: 768px)': {
-      dragFree: false
-    }
-  }
+      dragFree: false,
+    },
+  },
 };
 
 const AUTOPLAY_OPTIONS = {
@@ -57,7 +58,7 @@ export default function SponsorCarousel() {
   useEffect(() => {
     if (!emblaApi) return;
     onSelect();
-    
+
     const updateScrollState = () => {
       setCanScrollPrev(emblaApi.canScrollPrev());
       setCanScrollNext(emblaApi.canScrollNext());
@@ -126,59 +127,58 @@ export default function SponsorCarousel() {
     <section className="bg-white py-16">
       <div className="container mx-auto px-4">
         <h2 className="text-4xl font-bold text-center mb-12">Our Sponsors</h2>
-        
+
         <div className="relative px-12">
           <div className="overflow-hidden" ref={emblaRef}>
             <div className="flex cursor-grab active:cursor-grabbing">
-
-            {sponsors.map((sponsor, index) => (
-              <div 
-                key={`${sponsor.name}-${index}`}
-                className={cn(
-                  "flex-[0_0_90%] sm:flex-[0_0_45%] md:flex-[0_0_30%] min-w-0 px-4",
-                  "transition-all duration-300 ease-out",
-                  selectedIndex === index ? 'opacity-100' : 'opacity-70'
-                )}
-              >
-                <div 
+              {sponsors.map((sponsor, index) => (
+                <div
+                  key={`${sponsor.name}-${index}`}
                   className={cn(
-                    "bg-white rounded-xl shadow-lg p-6 h-full",
-                    "transition-all duration-300 ease-out transform",
-                    selectedIndex === index ? 'shadow-xl scale-105' : 'shadow-md scale-100',
-                    'hover:shadow-lg hover:scale-[1.02]'
+                    'flex-[0_0_90%] sm:flex-[0_0_45%] md:flex-[0_0_30%] min-w-0 px-4',
+                    'transition-all duration-300 ease-out',
+                    selectedIndex === index ? 'opacity-100' : 'opacity-70'
                   )}
                 >
-                  <div 
-                    className="relative aspect-[3/2] cursor-pointer transition-transform hover:scale-105"
-                    onClick={() => setSelectedSponsor(sponsor)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && setSelectedSponsor(sponsor)}
+                  <div
+                    className={cn(
+                      'bg-white rounded-xl shadow-lg p-6 h-full',
+                      'transition-all duration-300 ease-out transform',
+                      selectedIndex === index ? 'shadow-xl scale-105' : 'shadow-md scale-100',
+                      'hover:shadow-lg hover:scale-[1.02]'
+                    )}
                   >
-                    <Image
-                      src={sponsor.imageUrl}
-                      alt={`${sponsor.name} logo`}
-                      fill
-                      className="object-contain p-4"
-                      sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-                    />
-                  </div>
-                  <div className="flex flex-col items-center gap-2 mt-4">
-                    <h3 className="text-lg font-medium text-gray-900">{sponsor.name}</h3>
-                    <span 
-                      className={cn(
-                        "px-4 py-1.5 rounded-full text-sm font-medium",
-                        sponsor.level === 'Champion' 
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-amber-100 text-amber-700"
-                      )}
+                    <div
+                      className="relative aspect-[3/2] cursor-pointer transition-transform hover:scale-105"
+                      onClick={() => setSelectedSponsor(sponsor)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={e => e.key === 'Enter' && setSelectedSponsor(sponsor)}
                     >
-                      {sponsor.level}
-                    </span>
+                      <Image
+                        src={sponsor.imageUrl}
+                        alt={`${sponsor.name} logo`}
+                        fill
+                        className="object-contain p-4"
+                        sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                      />
+                    </div>
+                    <div className="flex flex-col items-center gap-2 mt-4">
+                      <h3 className="text-lg font-medium text-gray-900">{sponsor.name}</h3>
+                      <span
+                        className={cn(
+                          'px-4 py-1.5 rounded-full text-sm font-medium',
+                          sponsor.level === 'Champion'
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-amber-100 text-amber-700'
+                        )}
+                      >
+                        {sponsor.level}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
             </div>
           </div>
 
@@ -223,10 +223,8 @@ export default function SponsorCarousel() {
               <button
                 key={index}
                 className={cn(
-                  "w-2 h-2 rounded-full transition-all duration-200",
-                  selectedIndex === index 
-                    ? "bg-blue-500 w-4"
-                    : "bg-gray-300 hover:bg-gray-400"
+                  'w-2 h-2 rounded-full transition-all duration-200',
+                  selectedIndex === index ? 'bg-blue-500 w-4' : 'bg-gray-300 hover:bg-gray-400'
                 )}
                 onClick={() => emblaApi?.scrollTo(index)}
                 aria-label={`Go to slide ${index + 1}`}

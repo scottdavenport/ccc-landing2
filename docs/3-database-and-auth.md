@@ -5,6 +5,7 @@ Let's understand how we store data and handle admin access!
 ## Supabase Setup 📦
 
 ### What is Supabase?
+
 - Think of it like a super-powered spreadsheet on the internet
 - Stores all our data securely
 - Handles user login/logout
@@ -12,6 +13,7 @@ Let's understand how we store data and handle admin access!
 ### Our Database Tables
 
 #### sponsors
+
 ```sql
 table sponsors {
   id: number        -- Unique ID for each sponsor
@@ -25,16 +27,19 @@ table sponsors {
 ## How We Connect to Supabase 🔌
 
 ### client.ts
+
 ```typescript
 // lib/supabase/client.ts
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserClient } from '@supabase/ssr';
 
 export const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+);
 ```
+
 This file:
+
 - Creates our connection to Supabase
 - Uses environment variables for security
 - Can be imported anywhere we need database access
@@ -42,42 +47,41 @@ This file:
 ## Using the Database 💾
 
 ### Adding a Sponsor
+
 ```typescript
 // Example of adding a new sponsor
 async function addSponsor(name: string) {
-  const { data, error } = await supabase
-    .from('sponsors')
-    .insert({ name })
-  
+  const { data, error } = await supabase.from('sponsors').insert({ name });
+
   if (error) {
-    console.error('Oops:', error.message)
-    return false
+    console.error('Oops:', error.message);
+    return false;
   }
-  
-  return true
+
+  return true;
 }
 ```
 
 ### Getting Sponsors
+
 ```typescript
 // Example of getting all sponsors
 async function getSponsors() {
-  const { data, error } = await supabase
-    .from('sponsors')
-    .select('*')
-  
+  const { data, error } = await supabase.from('sponsors').select('*');
+
   if (error) {
-    console.error('Oops:', error.message)
-    return []
+    console.error('Oops:', error.message);
+    return [];
   }
-  
-  return data
+
+  return data;
 }
 ```
 
 ## Authentication 🔑
 
 ### How Login Works
+
 1. Admin goes to `/admin/login`
 2. Enters email and password
 3. Supabase checks if they're allowed
@@ -85,19 +89,20 @@ async function getSponsors() {
 5. If no, they see an error message
 
 ### auth.tsx
+
 ```typescript
 // lib/auth.tsx
 export function AuthProvider({ children }) {
   // Keeps track of logged-in user
   const [user, setUser] = useState(null)
-  
+
   // Check if user is logged in
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setUser(data?.session?.user ?? null)
     })
   }, [])
-  
+
   return (
     <AuthContext.Provider value={{ user }}>
       {children}
@@ -109,20 +114,19 @@ export function AuthProvider({ children }) {
 ## Connection Status 🚦
 
 ### How We Check Connection
+
 ```typescript
 // components/admin/ConnectionStatus.tsx
 async function checkConnection() {
   try {
     // Try to count sponsors
-    const { error } = await supabase
-      .from('sponsors')
-      .select('count')
-    
+    const { error } = await supabase.from('sponsors').select('count');
+
     // If no error, we're connected!
-    setStatus('connected')
+    setStatus('connected');
   } catch {
     // If error, we're disconnected
-    setStatus('disconnected')
+    setStatus('disconnected');
   }
 }
 ```
@@ -130,30 +134,34 @@ async function checkConnection() {
 ## Tips and Tricks 💡
 
 1. **Always Handle Errors**
+
    ```typescript
-   const { data, error } = await supabase.from('sponsors').select()
+   const { data, error } = await supabase.from('sponsors').select();
    if (error) {
      // Always check for errors!
-     console.error(error)
-     return
+     console.error(error);
+     return;
    }
    ```
 
 2. **Use TypeScript Types**
+
    ```typescript
    type Sponsor = {
-     id: number
-     name: string
-     logo_url?: string  // ? means optional
-   }
+     id: number;
+     name: string;
+     logo_url?: string; // ? means optional
+   };
    ```
 
 3. **Check Connection Status**
+
    - The green/red indicator shows database status
    - If it's red, check your .env file
    - Make sure you're connected to internet
 
 4. **Security Best Practices**
+
    - Never share your Supabase keys
    - Always use environment variables
    - Test with fake data first
@@ -166,6 +174,7 @@ async function checkConnection() {
 ## Need Help? 🤔
 
 If you're stuck:
+
 1. Check the browser console for errors
 2. Make sure your .env file is set up
 3. Try refreshing the page
