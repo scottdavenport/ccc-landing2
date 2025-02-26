@@ -322,23 +322,11 @@ export default function SponsorCarousel() {
             </div>
           </div>
 
-          {/* Progress Bar */}
-          <div className="mt-4">
-            <div className="sponsor-embla__progress">
-              <div
-                className="sponsor-embla__progress__bar"
-                style={{ width: `${scrollProgress}%` }}
-              />
-            </div>
-            <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
-              <span>{selectedIndex + 1} of {sponsors.length}</span>
-              <button
-                onClick={() => emblaApi?.scrollTo(0)}
-                className="text-blue-500 hover:text-blue-600 font-medium"
-              >
-                Reset
-              </button>
-            </div>
+          {/* Subtle sponsor count indicator */}
+          <div className="mt-4 text-center">
+            <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium text-gray-400">
+              {sponsors.length} {sponsors.length === 1 ? 'Sponsor' : 'Sponsors'}
+            </span>
           </div>
         </div>
 
