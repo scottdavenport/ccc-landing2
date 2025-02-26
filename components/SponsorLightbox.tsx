@@ -100,7 +100,7 @@ export function SponsorLightbox({ isOpen, onClose, sponsor }: SponsorLightboxPro
                       
                       <div className="mb-6">
                         <div className="text-sm font-medium text-gray-500 mb-1">Sponsorship Amount</div>
-                        <div className="text-3xl font-bold text-gray-900">${sponsor.amount.toLocaleString()}</div>
+                        <div className="text-3xl font-bold text-gray-900">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(sponsor.amount)}</div>
                       </div>
                       
                       <div className="mb-6">
