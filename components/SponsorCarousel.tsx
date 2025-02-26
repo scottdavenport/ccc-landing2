@@ -249,7 +249,7 @@ export default function SponsorCarousel() {
                       </div>
                       
                       <div className="absolute top-2 right-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-md">
-                        {sponsor.amount.toLocaleString()}
+                        ${sponsor.amount.toLocaleString()}
                       </div>
                       
                       <div className="sponsor-slide__details">
