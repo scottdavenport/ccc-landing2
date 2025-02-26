@@ -25,6 +25,7 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
   const [name, setName] = useState('');
   const [levels, setLevels] = useState<SponsorLevel[]>([]);
   const [selectedLevel, setSelectedLevel] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -126,6 +127,10 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
     }
   };
 
+  // Generate an array of years (current year ± 3 years)
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 7 }, (_, i) => currentYear - 3 + i);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -147,7 +152,7 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
           {
             name,
             level: selectedLevel,
-            year: new Date().getFullYear(),
+            year: selectedYear,
             cloudinary_public_id: cloudinaryData?.public_id,
             image_url: cloudinaryData?.secure_url,
           },
@@ -231,6 +236,28 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
                 No sponsor levels available. One will be created automatically.
               </div>
             )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="sponsorYear"
+              className="block text-sm font-medium text-foreground mb-1"
+            >
+              Sponsor Year
+            </label>
+            <select
+              id="sponsorYear"
+              value={selectedYear}
+              onChange={e => setSelectedYear(parseInt(e.target.value))}
+              className="appearance-none block w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm"
+              required
+            >
+              {years.map(year => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

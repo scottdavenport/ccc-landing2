@@ -10,6 +10,7 @@
 - [x] Supabase integration for dynamic content
 - [x] Improved sponsor carousel with dot navigation and progress indicators
 - [x] Responsive design for sponsor carousel with custom CSS
+- [x] Enhanced Add Sponsor Modal with year selection
 
 ## Upcoming Features
 - [ ] Improved mobile responsiveness
