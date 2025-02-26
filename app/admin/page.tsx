@@ -5,9 +5,22 @@ import { Plus } from 'lucide-react';
 import { default as SponsorsTable } from '@/components/admin/SponsorsTable';
 import { Button } from '@/components/ui/button';
 import { AddSponsorDialog } from '@/components/admin/AddSponsorDialog';
+import { SponsorWithLevel } from '@/types/sponsors';
 
 export default function AdminPage() {
   const [isAddSponsorOpen, setIsAddSponsorOpen] = useState(false);
+  const [selectedSponsor, setSelectedSponsor] = useState<SponsorWithLevel | null>(null);
+
+  const handleEditSponsor = (sponsor: SponsorWithLevel) => {
+    setSelectedSponsor(sponsor);
+    setIsAddSponsorOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsAddSponsorOpen(false);
+    setSelectedSponsor(null);
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white shadow rounded-lg p-6">
@@ -56,15 +69,19 @@ export default function AdminPage() {
               Add Sponsor
             </Button>
           </div>
-          <SponsorsTable onAddSponsor={() => setIsAddSponsorOpen(true)} />
+          <SponsorsTable 
+            onAddSponsor={() => setIsAddSponsorOpen(true)} 
+            onEditSponsor={handleEditSponsor}
+          />
         </div>
       </div>
       
       <AddSponsorDialog
         isOpen={isAddSponsorOpen}
-        onClose={() => setIsAddSponsorOpen(false)}
+        onClose={handleCloseDialog}
+        sponsorToEdit={selectedSponsor}
         onSponsorAdded={() => {
-          // Refresh the page data when a sponsor is added
+          // Refresh the page data when a sponsor is added or edited
           window.location.reload();
         }}
       />
