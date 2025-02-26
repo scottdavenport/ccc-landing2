@@ -10,8 +10,9 @@ The Sponsor Carousel is a dynamic, interactive component that showcases sponsors
 - **Smooth Animations**: Implements parallax effects and transitions
 - **Responsive Design**: Adapts to different screen sizes
 - **Accessibility**: Includes keyboard navigation and ARIA attributes
-- **Progress Indicators**: Shows carousel progress and current slide position
+- **Currency Formatting**: Properly displays sponsorship amounts in USD format
 - **Autoplay**: Automatically cycles through sponsors with pause on hover/interaction
+- **Progress Indicators**: Shows carousel progress and current slide position
 
 ## Technical Implementation
 
