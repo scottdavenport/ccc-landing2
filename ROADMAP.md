@@ -8,6 +8,8 @@
 - [x] Enhanced sponsor carousel with parallax effects and animations
 - [x] Cloudinary integration for optimized image loading
 - [x] Supabase integration for dynamic content
+- [x] Improved sponsor carousel with dot navigation and progress indicators
+- [x] Responsive design for sponsor carousel with custom CSS
 
 ## Upcoming Features
 - [ ] Improved mobile responsiveness
