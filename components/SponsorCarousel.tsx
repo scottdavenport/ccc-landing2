@@ -50,7 +50,6 @@ export default function SponsorCarousel() {
   const [loading, setLoading] = useState(true);
   const [emblaRef, emblaApi] = useEmblaCarousel(OPTIONS, [AutoPlay(AUTOPLAY_OPTIONS)]);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [parallaxValues, setParallaxValues] = useState<number[]>([]);
   const [selectedSponsor, setSelectedSponsor] = useState<TransformedSponsor | null>(null);
   const [canScrollPrev, setCanScrollPrev] = useState(false);
@@ -88,10 +87,6 @@ export default function SponsorCarousel() {
     const updateScrollState = () => {
       setCanScrollPrev(emblaApi.canScrollPrev());
       setCanScrollNext(emblaApi.canScrollNext());
-
-      // Update scroll progress
-      const progress = Math.max(0, Math.min(1, emblaApi.scrollProgress()));
-      setScrollProgress(progress * 100);
 
       // Update parallax values
       try {
