@@ -21,6 +21,18 @@ This feature moves the "Add New Sponsor" form into a modal dialog, making the ad
    - Added state management for dialog visibility
    - Added AddSponsorDialog component
 
+## Features
+
+- **Sponsor Name Input**: Text field for entering the sponsor's name
+- **Sponsor Level Selection**: Dropdown to select the sponsorship level
+- **Year Selection**: Dropdown to select the sponsorship year (defaults to current year)
+- **Logo Upload**: File input for uploading the sponsor's logo
+- **Form Validation**: Validates required fields before submission
+- **Cloudinary Integration**: Uploads and stores sponsor logos in Cloudinary
+- **Success/Error Feedback**: Provides visual feedback on form submission status
+- **Sortable Sponsor List**: Allows admin to reorder sponsors
+
+
 ## Technical Details
 
 ### AddSponsorDialog Props
@@ -52,6 +64,14 @@ const [isAddSponsorOpen, setIsAddSponsorOpen] = useState(false);
   onSponsorAdded={fetchSponsors}
 />
 ```
+
+## Technical Implementation
+
+The Add Sponsor Modal is implemented using the following components:
+
+1. **AddSponsorForm**: A React component that handles the form inputs, validation, and submission
+2. **Supabase Integration**: Stores sponsor data in the Supabase database
+3. **Cloudinary Integration**: Handles image uploads and storage
 
 ## Testing
 

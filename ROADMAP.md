@@ -15,6 +15,7 @@
 - [x] Fixed sponsor table data handling with improved error checking
 - [x] Modal-based sponsor editing for improved user experience
 - [x] Delete confirmation dialogs for data protection
+- [x] Enhanced Add Sponsor Modal with year selection
 
 ## Upcoming Features
 - [ ] Improved mobile responsiveness
