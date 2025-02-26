@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridRowSelectionModel, GridCellParams } from '@mui/x-data-grid';
 import { Plus, Trash2, Upload } from 'lucide-react';
 
 import {
@@ -26,20 +26,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase/client';
 import { SponsorLogoDialog } from './SponsorLogoDialog';
-
-// Extended type that includes joined sponsor_levels data and editing state
-type SponsorWithLevel = {
-  id: string;
-  name: string;
-  year: number;
-  created_at: string;
-  cloudinary_public_id?: string;
-  image_url?: string;
-  isEditing?: boolean;
-  level: string;
-  level_name?: string;
-  level_amount?: number;
-};
+import { SponsorWithLevel } from '@/types/sponsors';
 
 function LoadingSpinner() {
   return (
@@ -304,7 +291,7 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
     }
   };
 
-  const handleRowClick = (params: any) => {
+  const handleRowClick = (params: GridCellParams) => {
     // Don't trigger edit mode if clicking on logo or actions column
     if (params.field === 'image_url' || params.field === 'actions') {
       return;

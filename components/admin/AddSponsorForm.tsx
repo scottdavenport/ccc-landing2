@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { SponsorWithLevel } from '@/types/sponsors';
 
 type SponsorLevel = {
   id: string;
@@ -19,17 +20,20 @@ function LoadingSpinner() {
 
 interface AddSponsorFormProps {
   onSponsorAdded?: () => void;
+  sponsorToEdit?: SponsorWithLevel | null;
 }
 
-export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
+export function AddSponsorForm({ onSponsorAdded, sponsorToEdit }: AddSponsorFormProps) {
   const [name, setName] = useState('');
   const [levels, setLevels] = useState<SponsorLevel[]>([]);
   const [selectedLevel, setSelectedLevel] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [uploadProgress] = useState(0);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -54,14 +58,38 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
       }
 
       setLevels(data);
-      setSelectedLevel(data[0].id);
+      
+      // If not in edit mode, set default level
+      if (!sponsorToEdit) {
+        setSelectedLevel(data[0].id);
+      }
     }, 500);
 
     return () => {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, []);
+  }, [sponsorToEdit]);
+
+  // Set form values when sponsorToEdit changes
+  useEffect(() => {
+    if (sponsorToEdit) {
+      setName(sponsorToEdit.name || '');
+      setSelectedLevel(sponsorToEdit.level || '');
+      setSelectedYear(sponsorToEdit.year || new Date().getFullYear());
+      setIsEditMode(true);
+    } else {
+      // Reset form when not editing
+      setName('');
+      setLogoFile(null);
+      setSelectedYear(new Date().getFullYear());
+      setIsEditMode(false);
+    }
+  }, [sponsorToEdit]);
+
+  // Generate an array of years (current year ± 3 years)
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 7 }, (_, i) => currentYear - 3 + i);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -140,27 +168,53 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
         cloudinaryData = await uploadToCloudinary(logoFile);
       }
 
-      // Step 2: Insert sponsor into Supabase
-      const { error: sponsorError } = await supabase
-        .from('sponsors')
-        .insert([
-          {
+      if (isEditMode && sponsorToEdit) {
+        // Update existing sponsor
+        const { error: sponsorError } = await supabase
+          .from('sponsors')
+          .update({
             name,
             level: selectedLevel,
-            year: new Date().getFullYear(),
-            cloudinary_public_id: cloudinaryData?.public_id,
-            image_url: cloudinaryData?.secure_url,
-          },
-        ])
-        .select()
-        .single();
+            year: selectedYear,
+            ...(cloudinaryData && {
+              cloudinary_public_id: cloudinaryData.public_id,
+              image_url: cloudinaryData.secure_url,
+            }),
+          })
+          .eq('id', sponsorToEdit.id)
+          .select()
+          .single();
 
-      if (sponsorError) {
-        // Rollback: Delete from Cloudinary if Supabase insert fails
-        if (cloudinaryData) {
-          await deleteFromCloudinary(cloudinaryData.public_id);
+        if (sponsorError) {
+          // Rollback: Delete from Cloudinary if Supabase update fails
+          if (cloudinaryData) {
+            await deleteFromCloudinary(cloudinaryData.public_id);
+          }
+          throw sponsorError;
         }
-        throw sponsorError;
+      } else {
+        // Insert new sponsor
+        const { error: sponsorError } = await supabase
+          .from('sponsors')
+          .insert([
+            {
+              name,
+              level: selectedLevel,
+              year: selectedYear,
+              cloudinary_public_id: cloudinaryData?.public_id,
+              image_url: cloudinaryData?.secure_url,
+            },
+          ])
+          .select()
+          .single();
+
+        if (sponsorError) {
+          // Rollback: Delete from Cloudinary if Supabase insert fails
+          if (cloudinaryData) {
+            await deleteFromCloudinary(cloudinaryData.public_id);
+          }
+          throw sponsorError;
+        }
       }
 
       setSuccess(true);
@@ -170,7 +224,7 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
         onSponsorAdded();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while adding the sponsor');
+      setError(err instanceof Error ? err.message : 'An error occurred while saving the sponsor');
     } finally {
       setIsLoading(false);
     }
@@ -184,7 +238,7 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
 
       {success && (
         <div className="mb-6 p-4 bg-secondary/10 text-secondary rounded-lg">
-          Sponsor added successfully!
+          Sponsor {isEditMode ? 'updated' : 'added'} successfully!
         </div>
       )}
 
@@ -234,6 +288,28 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
           </div>
 
           <div>
+            <label
+              htmlFor="sponsorYear"
+              className="block text-sm font-medium text-foreground mb-1"
+            >
+              Sponsor Year
+            </label>
+            <select
+              id="sponsorYear"
+              value={selectedYear}
+              onChange={e => setSelectedYear(parseInt(e.target.value))}
+              className="appearance-none block w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm"
+              required
+            >
+              {years.map(year => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
             <label htmlFor="logo" className="block text-sm font-medium text-foreground mb-1">
               Sponsor Logo
             </label>
@@ -267,7 +343,7 @@ export function AddSponsorForm({ onSponsorAdded }: AddSponsorFormProps) {
           disabled={isLoading}
           className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors disabled:opacity-50"
         >
-          {isLoading ? <LoadingSpinner /> : 'Add Sponsor'}
+          {isLoading ? <LoadingSpinner /> : isEditMode ? 'Update Sponsor' : 'Add Sponsor'}
         </button>
       </form>
     </div>
