@@ -51,9 +51,10 @@ function LoadingSpinner() {
 
 interface SponsorsTableProps {
   onAddSponsor: () => void;
+  onEditSponsor?: (sponsor: SponsorWithLevel) => void;
 }
 
-export default function SponsorsTable({ onAddSponsor }: SponsorsTableProps) {
+export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsTableProps) {
   const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
   const [sponsors, setSponsors] = useState<SponsorWithLevel[]>([]);
 
@@ -61,6 +62,7 @@ export default function SponsorsTable({ onAddSponsor }: SponsorsTableProps) {
   const [error, setError] = useState<string | null>(null);
   const [selectedRows, setSelectedRows] = useState<GridRowSelectionModel>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [singleDeleteId, setSingleDeleteId] = useState<string | null>(null);
 
   const fetchSponsors = async () => {
     setIsLoading(true);
@@ -253,7 +255,7 @@ export default function SponsorsTable({ onAddSponsor }: SponsorsTableProps) {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => handleDelete([params.row.id])}
+          onClick={() => setSingleDeleteId(params.row.id)}
           className="text-destructive hover:text-destructive hover:bg-destructive/10"
         >
           <Trash2 className="h-4 w-4" />
@@ -295,9 +297,23 @@ export default function SponsorsTable({ onAddSponsor }: SponsorsTableProps) {
       setSponsors(sponsors.filter(sponsor => !ids.includes(sponsor.id)));
       setSelectedRows([]);
       setShowDeleteDialog(false);
+      setSingleDeleteId(null);
     } catch (err) {
       console.error('Error deleting sponsors:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete sponsors');
+    }
+  };
+
+  const handleRowClick = (params: any) => {
+    // Don't trigger edit mode if clicking on logo or actions column
+    if (params.field === 'image_url' || params.field === 'actions') {
+      return;
+    }
+    
+    // Find the full sponsor data
+    const sponsor = sponsors.find(s => s.id === params.id);
+    if (sponsor && onEditSponsor) {
+      onEditSponsor(sponsor);
     }
   };
 
@@ -341,6 +357,7 @@ export default function SponsorsTable({ onAddSponsor }: SponsorsTableProps) {
               onRowSelectionModelChange={newSelection => {
                 setSelectedRows(newSelection);
               }}
+              onCellClick={handleRowClick}
             />
           </div>
         </>
@@ -353,8 +370,7 @@ export default function SponsorsTable({ onAddSponsor }: SponsorsTableProps) {
         sponsorName={sponsors.find(s => s.id === selectedSponsorId)?.name || ''}
       />
 
-
-
+      {/* Confirmation dialog for bulk delete */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -369,6 +385,27 @@ export default function SponsorsTable({ onAddSponsor }: SponsorsTableProps) {
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => handleDelete(selectedRows as string[])}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmation dialog for single delete */}
+      <AlertDialog open={!!singleDeleteId} onOpenChange={(open) => !open && setSingleDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Sponsor</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this sponsor? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => singleDeleteId && handleDelete([singleDeleteId])}
             >
               Delete
             </AlertDialogAction>
