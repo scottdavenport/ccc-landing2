@@ -36,7 +36,7 @@ Before committing a new migration:
 
 Our project uses GitHub Actions to automatically deploy migrations in different scenarios:
 
-1. **Pull Requests**: Migrations are validated but not applied (dry-run mode)
+1. **Pull Requests**: Migrations are validated for basic SQL syntax but not applied to any database
 2. **Feature Branch Pushes**: Migrations are applied to the preview environment
 3. **Main Branch Pushes**: Migrations are applied to the production environment
 
