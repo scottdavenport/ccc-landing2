@@ -9,6 +9,7 @@ This guide outlines best practices for managing database migrations with Supabas
 - **Use Current Date**: Always use the current year for migration file names (e.g., `20250227_add_website_to_sponsors.sql` for a migration created on February 27, 2025)
 - **Descriptive Names**: Use descriptive names that clearly indicate what the migration does
 - **One Change Per Migration**: Each migration should make a single logical change to the database
+- **Include Timestamp**: For more granular tracking, include a timestamp in the filename (e.g., `20250227_134225_sponsor_website_field.sql`)
 
 ## Creating New Migrations
 
@@ -30,6 +31,16 @@ Before committing a new migration:
 1. Test it locally using `supabase db push`
 2. Verify that the changes are applied correctly
 3. Test the rollback process if applicable
+
+## GitHub Actions Workflow
+
+Our project uses GitHub Actions to automatically deploy migrations in different scenarios:
+
+1. **Pull Requests**: Migrations are validated but not applied (dry-run mode)
+2. **Feature Branch Pushes**: Migrations are applied to the preview environment
+3. **Main Branch Pushes**: Migrations are applied to the production environment
+
+This ensures that migrations are thoroughly tested before being applied to production.
 
 ## Handling Migration Failures
 
@@ -88,5 +99,7 @@ END $$;
 4. **Test Before Committing**: Always test migrations locally before pushing
 5. **One Change Per Migration**: Keep migrations focused on a single change
 6. **Current Dates**: Always use the current date in migration filenames
+7. **Use Timestamps**: Include timestamps in migration filenames for more granular tracking
+8. **Use Simple SQL**: Prefer simple SQL commands over complex PL/pgSQL blocks when possible
 
 By following these guidelines, we can maintain a clean migration history and avoid deployment issues.
