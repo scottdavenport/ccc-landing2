@@ -28,6 +28,7 @@ export function AddSponsorForm({ onSponsorAdded, sponsorToEdit }: AddSponsorForm
   const [levels, setLevels] = useState<SponsorLevel[]>([]);
   const [selectedLevel, setSelectedLevel] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [website, setWebsite] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -77,12 +78,14 @@ export function AddSponsorForm({ onSponsorAdded, sponsorToEdit }: AddSponsorForm
       setName(sponsorToEdit.name || '');
       setSelectedLevel(sponsorToEdit.level || '');
       setSelectedYear(sponsorToEdit.year || new Date().getFullYear());
+      setWebsite(sponsorToEdit.website || '');
       setIsEditMode(true);
     } else {
       // Reset form when not editing
       setName('');
       setLogoFile(null);
       setSelectedYear(new Date().getFullYear());
+      setWebsite('');
       setIsEditMode(false);
     }
   }, [sponsorToEdit]);
@@ -176,6 +179,7 @@ export function AddSponsorForm({ onSponsorAdded, sponsorToEdit }: AddSponsorForm
             name,
             level: selectedLevel,
             year: selectedYear,
+            website,
             ...(cloudinaryData && {
               cloudinary_public_id: cloudinaryData.public_id,
               image_url: cloudinaryData.secure_url,
@@ -201,6 +205,7 @@ export function AddSponsorForm({ onSponsorAdded, sponsorToEdit }: AddSponsorForm
               name,
               level: selectedLevel,
               year: selectedYear,
+              website,
               cloudinary_public_id: cloudinaryData?.public_id,
               image_url: cloudinaryData?.secure_url,
             },
@@ -307,6 +312,20 @@ export function AddSponsorForm({ onSponsorAdded, sponsorToEdit }: AddSponsorForm
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label htmlFor="website" className="block text-sm font-medium text-foreground mb-1">
+              Sponsor Website
+            </label>
+            <input
+              type="text"
+              id="website"
+              value={website}
+              onChange={e => setWebsite(e.target.value)}
+              className="appearance-none block w-full px-3 py-2 border border-border rounded-md shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm"
+              placeholder="Enter sponsor website"
+            />
           </div>
 
           <div>

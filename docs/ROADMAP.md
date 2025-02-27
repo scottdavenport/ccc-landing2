@@ -12,6 +12,7 @@
    [x] Add real-time Cloudinary connection status
    [x] Add logo display in sponsor carousel
    [x] Make sponsor carousel dynamic with real data
+   [x] Add optional website field to sponsors
    [] Implement rollback mechanism if either Cloudinary or Supabase operations fail
 
 2. Authentication & Authorization
