@@ -48,12 +48,87 @@ jobs:
               echo "Validating SQL syntax in $migration..."
               # Check basic SQL syntax (this won't catch all errors but will catch major ones)
               cat "$migration" | grep -v "^--" | grep -q ";" || { echo "Error: No SQL statements found in $migration"; exit 1; }
+              
+              # Check for idempotent patterns
+              if ! grep -q "IF NOT EXISTS\|IF EXISTS\|DROP POLICY IF EXISTS\|CREATE OR REPLACE\|DO \$\$" "$migration"; then
+                echo "Warning: Migration $migration may not be idempotent. Consider using IF NOT EXISTS or similar patterns."
+              fi
             done
             
             echo "All migration files passed basic validation"
           else
             echo "No migration files found to validate"
           fi
+
+      # Common function for migration deployment with enhanced error handling
+      - name: Setup Migration Helper Functions
+        if: github.event_name == 'push'
+        run: |
+          # Function to check if a column exists in a table
+          check_column_exists() {
+            local schema=$1
+            local table=$2
+            local column=$3
+            local db_url=$4
+            
+            PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$db_url" -t -c "
+              SELECT column_name 
+              FROM information_schema.columns 
+              WHERE table_schema = '$schema' 
+              AND table_name = '$table' 
+              AND column_name = '$column';" | grep -q "$column"
+            
+            return $?
+          }
+          
+          # Function to check if a migration exists in the schema_migrations table
+          check_migration_exists() {
+            local version=$1
+            local db_url=$2
+            
+            PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$db_url" -t -c "
+              SELECT version 
+              FROM supabase_migrations.schema_migrations 
+              WHERE version = '$version';" | grep -q "$version"
+            
+            return $?
+          }
+          
+          # Function to add a migration to the schema_migrations table
+          add_migration_to_history() {
+            local version=$1
+            local name=$2
+            local db_url=$3
+            
+            echo "Adding migration $version to schema_migrations table..."
+            PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$db_url" -c "
+              INSERT INTO supabase_migrations.schema_migrations (version, name, statements)
+              VALUES ('$version', '$name', ARRAY['-- Migration added by GitHub Actions'])
+              ON CONFLICT (version) DO NOTHING;"
+          }
+          
+          # Function to apply a migration file directly
+          apply_migration_directly() {
+            local migration_file=$1
+            local db_url=$2
+            
+            echo "Applying migration directly: $migration_file"
+            PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$db_url" -f "$migration_file"
+            
+            # Get the migration version and name
+            local migration_name=$(basename "$migration_file" .sql)
+            local version=${migration_name%%_*}
+            local name=${migration_name#*_}
+            
+            # Add to migration history
+            add_migration_to_history "$version" "$name" "$db_url"
+          }
+          
+          # Export functions for use in other steps
+          echo "check_column_exists() { $check_column_exists; }" >> $GITHUB_ENV
+          echo "check_migration_exists() { $check_migration_exists; }" >> $GITHUB_ENV
+          echo "add_migration_to_history() { $add_migration_to_history; }" >> $GITHUB_ENV
+          echo "apply_migration_directly() { $apply_migration_directly; }" >> $GITHUB_ENV
 
       # For feature branch pushes, deploy to preview
       - name: Deploy Migrations (Preview)
@@ -66,72 +141,45 @@ jobs:
           echo "Current migration status:"
           supabase migration list
           
-          # First try standard migration push
-          echo "Attempting standard migration push..."
+          # Get database connection string
+          SUPABASE_DB_URL=$(supabase db remote get-connection-string)
+          
+          # Try to push migrations, but handle errors gracefully
           if ! supabase db push; then
-            echo "Migration push failed. Checking if it's a duplicate key error..."
+            echo "Migration push failed. Attempting recovery..."
             
-            # Check if the error is due to duplicate key violation
-            if supabase db push 2>&1 | grep -q "duplicate key value violates unique constraint"; then
-              echo "Detected duplicate key error. This usually means the migration is already applied."
-              echo "Verifying database schema..."
+            # Check if the website column exists in the sponsors table
+            if check_column_exists "api" "sponsors" "website" "$SUPABASE_DB_URL"; then
+              echo "Website column exists in the sponsors table. Schema appears to be correct."
+              echo "Attempting to fix migration history..."
               
-              # Get database connection string
-              SUPABASE_DB_URL=$(supabase db remote get-connection-string)
-              
-              # Verify that the website column exists in the sponsors table
-              WEBSITE_COL_EXISTS=$(PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$SUPABASE_DB_URL" -t -c "SELECT column_name FROM information_schema.columns WHERE table_schema = 'api' AND table_name = 'sponsors' AND column_name = 'website';")
-              
-              if [ -n "$WEBSITE_COL_EXISTS" ]; then
-                echo "Website column exists in the sponsors table. Migration appears to be already applied."
-                echo "Marking migrations as applied in the migration history..."
+              # Try to reset and push migrations with a more aggressive approach
+              echo "Attempting to push with --include-all flag..."
+              if ! supabase db push --include-all; then
+                echo "Still having issues. Trying to apply migrations directly..."
                 
-                # Get list of local migrations
-                LOCAL_MIGRATIONS=$(find supabase/migrations -name "*.sql" | grep -v "README.md" | sort)
+                # Get all migration files and sort them
+                MIGRATION_FILES=$(find supabase/migrations -name "*.sql" | sort)
                 
-                for migration in $LOCAL_MIGRATIONS; do
-                  MIGRATION_NAME=$(basename "$migration" .sql)
-                  TIMESTAMP=${MIGRATION_NAME%%_*}
+                for MIGRATION_FILE in $MIGRATION_FILES; do
+                  # Extract version from filename
+                  MIGRATION_NAME=$(basename "$MIGRATION_FILE" .sql)
+                  VERSION=${MIGRATION_NAME%%_*}
                   
-                  # Try to mark the migration as applied, ignoring errors
-                  echo "Marking $TIMESTAMP as applied..."
-                  supabase migration repair --status applied "$TIMESTAMP" || true
-                done
-                
-                echo "Migration history repair attempted. Continuing deployment."
-              else
-                echo "Website column does not exist in the sponsors table. There might be a real issue with the migrations."
-                exit 1
-              fi
-            else
-              # Get the list of all migrations (both local and remote)
-              LOCAL_MIGRATIONS=$(find supabase/migrations -name "*.sql" | grep -v "README.md" | sort)
-              REMOTE_MIGRATIONS=$(supabase migration list --db-only | awk '{print $1}')
-              
-              # Find the latest common migration between local and remote
-              LATEST_COMMON=""
-              for remote in $REMOTE_MIGRATIONS; do
-                for local in $LOCAL_MIGRATIONS; do
-                  local_timestamp=$(basename "$local" | cut -d_ -f1)
-                  if [ "$remote" = "$local_timestamp" ]; then
-                    LATEST_COMMON=$remote
+                  # Check if migration is already in the history
+                  if ! check_migration_exists "$VERSION" "$SUPABASE_DB_URL"; then
+                    echo "Migration $VERSION not found in history. Applying directly..."
+                    apply_migration_directly "$MIGRATION_FILE" "$SUPABASE_DB_URL"
+                  else
+                    echo "Migration $VERSION already exists in history. Skipping."
                   fi
                 done
-              done
-              
-              if [ -n "$LATEST_COMMON" ]; then
-                echo "Latest common migration: $LATEST_COMMON"
-                echo "Repairing migration history from this point..."
-                supabase migration repair --status applied "$LATEST_COMMON"
                 
-                # Try pushing again
-                echo "Retrying migration push after repair..."
-                supabase db push
-              else
-                echo "No common migrations found. This requires manual intervention."
-                echo "Please run 'supabase migration list' locally and on the remote to compare."
-                exit 1
+                echo "All migrations have been applied or verified."
               fi
+            else
+              echo "Website column does not exist in the sponsors table. There might be a real issue with the migrations."
+              exit 1
             fi
           fi
 
@@ -146,71 +194,71 @@ jobs:
           echo "Current migration status:"
           supabase migration list
           
-          # First try standard migration push
-          echo "Attempting standard migration push..."
+          # Get database connection string
+          SUPABASE_DB_URL=$(supabase db remote get-connection-string)
+          
+          # Try to push migrations, but handle errors gracefully
           if ! supabase db push; then
-            echo "Migration push failed. Checking if it's a duplicate key error..."
+            echo "Migration push failed. Attempting recovery..."
             
-            # Check if the error is due to duplicate key violation
-            if supabase db push 2>&1 | grep -q "duplicate key value violates unique constraint"; then
-              echo "Detected duplicate key error. This usually means the migration is already applied."
-              echo "Verifying database schema..."
+            # Check if the website column exists in the sponsors table
+            if check_column_exists "api" "sponsors" "website" "$SUPABASE_DB_URL"; then
+              echo "Website column exists in the sponsors table. Schema appears to be correct."
+              echo "Attempting to fix migration history..."
               
-              # Get database connection string
-              SUPABASE_DB_URL=$(supabase db remote get-connection-string)
-              
-              # Verify that the website column exists in the sponsors table
-              WEBSITE_COL_EXISTS=$(PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$SUPABASE_DB_URL" -t -c "SELECT column_name FROM information_schema.columns WHERE table_schema = 'api' AND table_name = 'sponsors' AND column_name = 'website';")
-              
-              if [ -n "$WEBSITE_COL_EXISTS" ]; then
-                echo "Website column exists in the sponsors table. Migration appears to be already applied."
-                echo "Marking migrations as applied in the migration history..."
+              # Try to reset and push migrations with a more aggressive approach
+              echo "Attempting to push with --include-all flag..."
+              if ! supabase db push --include-all; then
+                echo "Still having issues. Trying to apply migrations directly..."
                 
-                # Get list of local migrations
-                LOCAL_MIGRATIONS=$(find supabase/migrations -name "*.sql" | grep -v "README.md" | sort)
+                # Get all migration files and sort them
+                MIGRATION_FILES=$(find supabase/migrations -name "*.sql" | sort)
                 
-                for migration in $LOCAL_MIGRATIONS; do
-                  MIGRATION_NAME=$(basename "$migration" .sql)
-                  TIMESTAMP=${MIGRATION_NAME%%_*}
+                for MIGRATION_FILE in $MIGRATION_FILES; do
+                  # Extract version from filename
+                  MIGRATION_NAME=$(basename "$MIGRATION_FILE" .sql)
+                  VERSION=${MIGRATION_NAME%%_*}
                   
-                  # Try to mark the migration as applied, ignoring errors
-                  echo "Marking $TIMESTAMP as applied..."
-                  supabase migration repair --status applied "$TIMESTAMP" || true
-                done
-                
-                echo "Migration history repair attempted. Continuing deployment."
-              else
-                echo "Website column does not exist in the sponsors table. There might be a real issue with the migrations."
-                exit 1
-              fi
-            else
-              # Get the list of all migrations (both local and remote)
-              LOCAL_MIGRATIONS=$(find supabase/migrations -name "*.sql" | grep -v "README.md" | sort)
-              REMOTE_MIGRATIONS=$(supabase migration list --db-only | awk '{print $1}')
-              
-              # Find the latest common migration between local and remote
-              LATEST_COMMON=""
-              for remote in $REMOTE_MIGRATIONS; do
-                for local in $LOCAL_MIGRATIONS; do
-                  local_timestamp=$(basename "$local" | cut -d_ -f1)
-                  if [ "$remote" = "$local_timestamp" ]; then
-                    LATEST_COMMON=$remote
+                  # Check if migration is already in the history
+                  if ! check_migration_exists "$VERSION" "$SUPABASE_DB_URL"; then
+                    echo "Migration $VERSION not found in history. Applying directly..."
+                    apply_migration_directly "$MIGRATION_FILE" "$SUPABASE_DB_URL"
+                  else
+                    echo "Migration $VERSION already exists in history. Skipping."
                   fi
                 done
-              done
-              
-              if [ -n "$LATEST_COMMON" ]; then
-                echo "Latest common migration: $LATEST_COMMON"
-                echo "Repairing migration history from this point..."
-                supabase migration repair --status applied "$LATEST_COMMON"
                 
-                # Try pushing again
-                echo "Retrying migration push after repair..."
-                supabase db push
-              else
-                echo "No common migrations found. This requires manual intervention."
-                echo "Please run 'supabase migration list' locally and on the remote to compare."
-                exit 1
+                echo "All migrations have been applied or verified."
               fi
+            else
+              echo "Website column does not exist in the sponsors table. There might be a real issue with the migrations."
+              exit 1
             fi
+          fi
+          
+      # Verify final state after migrations
+      - name: Verify Migration State
+        if: github.event_name == 'push'
+        run: |
+          echo "Verifying final migration state..."
+          supabase link --project-ref "${{ env.SUPABASE_PROJECT_ID }}" -p "${{ env.SUPABASE_DB_PASSWORD }}"
+          
+          # Display final migration status
+          echo "Final migration status:"
+          supabase migration list
+          
+          # Get database connection string
+          SUPABASE_DB_URL=$(supabase db remote get-connection-string)
+          
+          # Verify that the website column exists in the sponsors table
+          if PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$SUPABASE_DB_URL" -t -c "
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_schema = 'api' 
+            AND table_name = 'sponsors' 
+            AND column_name = 'website';" | grep -q "website"; then
+            echo "Website column exists in the sponsors table. Migration successful!"
+          else
+            echo "Website column does not exist in the sponsors table. Migration failed!"
+            exit 1
           fi
