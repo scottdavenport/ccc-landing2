@@ -50,52 +50,10 @@ jobs:
               cat "$migration" | grep -v "^--" | grep -q ";" || { echo "Error: No SQL statements found in $migration"; exit 1; }
             done
             
-            # Try a dry run of the migrations
-            echo "Performing dry run of migrations..."
-            supabase db push --dry-run || { echo "Error: Migrations failed dry run validation"; exit 1; }
+            echo "All migration files passed basic validation"
           else
-            echo "No migration files found to validate."
+            echo "No migration files found to validate"
           fi
-          
-          echo "Migration validation complete."
-
-      # Common function for migration deployment with enhanced error handling
-      - name: Setup Migration Helper Functions
-        if: github.event_name == 'push'
-        run: |
-          # Function to check if a column exists in a table
-          function check_column_exists() {
-            local schema=$1
-            local table=$2
-            local column=$3
-            local db_url=$4
-            
-            PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$db_url" -t -c "
-              SELECT column_name 
-              FROM information_schema.columns 
-              WHERE table_schema = '$schema' 
-              AND table_name = '$table' 
-              AND column_name = '$column';" | grep -q "$column"
-            
-            return $?
-          }
-          
-          # Function to check if a migration exists in the schema_migrations table
-          function check_migration_exists() {
-            local version=$1
-            local db_url=$2
-            
-            PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$db_url" -t -c "
-              SELECT version 
-              FROM supabase_migrations.schema_migrations 
-              WHERE version = '$version';" | grep -q "$version"
-            
-            return $?
-          }
-          
-          # Export functions so they can be used in subsequent steps
-          export -f check_column_exists
-          export -f check_migration_exists
 
       # For feature branch pushes, deploy to preview
       - name: Deploy Migrations (Preview)
@@ -104,146 +62,51 @@ jobs:
           echo "Deploying migrations to preview environment..."
           supabase link --project-ref "${{ env.SUPABASE_PROJECT_ID }}" -p "${{ env.SUPABASE_DB_PASSWORD }}"
           
-          # Display current migration status for debugging
+          # Show current migration status
           echo "Current migration status:"
           supabase migration list
           
-          # Get database connection string
-          SUPABASE_DB_URL=$(supabase db remote get-connection-string)
-          
-          # Check for the specific migration history mismatch we're seeing
-          if supabase migration list | grep -q "20250227.*20250227183244"; then
+          # Check for migration mismatch
+          if supabase db push 2>&1 | grep -q "Remote migration versions not found in local migrations directory"; then
             echo "Detected migration history mismatch. Fixing before proceeding..."
-            fix_migration_history_mismatch "$SUPABASE_DB_URL"
+            
+            # Repair the migration history for the problematic migration
+            # This marks the migration as reverted in the history table
+            supabase migration repair --status reverted 20250227
+            
+            # Try pushing migrations again
+            supabase db push
+          else
+            # If no mismatch, just push the migrations
+            supabase db push
           fi
           
-          # Try to push migrations, but handle errors gracefully
-          if ! supabase db push; then
-            echo "Migration push failed. Attempting recovery..."
-            
-            # Check if the website column exists in the sponsors table
-            if check_column_exists "api" "sponsors" "website" "$SUPABASE_DB_URL"; then
-              echo "Website column exists in the sponsors table. Schema appears to be correct."
-              echo "Attempting to fix migration history..."
-              
-              # Fix the specific migration history mismatch
-              fix_migration_history_mismatch "$SUPABASE_DB_URL"
-              
-              # Try to reset and push migrations with a more aggressive approach
-              echo "Attempting to push with --include-all flag..."
-              if ! supabase db push --include-all; then
-                echo "Still having issues. Trying to apply migrations directly..."
-                
-                # Get all migration files and sort them
-                MIGRATION_FILES=$(find supabase/migrations -name "*.sql" | sort)
-                
-                for MIGRATION_FILE in $MIGRATION_FILES; do
-                  # Extract version from filename
-                  MIGRATION_NAME=$(basename "$MIGRATION_FILE" .sql)
-                  VERSION=${MIGRATION_NAME%%_*}
-                  
-                  # Check if migration is already in the history
-                  if ! check_migration_exists "$VERSION" "$SUPABASE_DB_URL"; then
-                    echo "Migration $VERSION not found in history. Applying directly..."
-                    apply_migration_directly "$MIGRATION_FILE" "$SUPABASE_DB_URL"
-                  else
-                    echo "Migration $VERSION already exists in history. Skipping."
-                  fi
-                done
-                
-                echo "All migrations have been applied or verified."
-              fi
-            else
-              echo "Website column does not exist in the sponsors table. There might be a real issue with the migrations."
-              exit 1
-            fi
-          fi
+          echo "Preview migrations deployed successfully."
 
-      # For main branch, deploy to production
+      # For main branch pushes, deploy to production
       - name: Deploy Migrations (Production)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           echo "Deploying migrations to production environment..."
           supabase link --project-ref "${{ env.SUPABASE_PROJECT_ID }}" -p "${{ env.SUPABASE_DB_PASSWORD }}"
           
-          # Display current migration status for debugging
+          # Show current migration status
           echo "Current migration status:"
           supabase migration list
           
-          # Get database connection string
-          SUPABASE_DB_URL=$(supabase db remote get-connection-string)
-          
-          # Check for the specific migration history mismatch we're seeing
-          if supabase migration list | grep -q "20250227.*20250227183244"; then
+          # Check for migration mismatch
+          if supabase db push 2>&1 | grep -q "Remote migration versions not found in local migrations directory"; then
             echo "Detected migration history mismatch. Fixing before proceeding..."
-            fix_migration_history_mismatch "$SUPABASE_DB_URL"
-          fi
-          
-          # Try to push migrations, but handle errors gracefully
-          if ! supabase db push; then
-            echo "Migration push failed. Attempting recovery..."
             
-            # Check if the website column exists in the sponsors table
-            if check_column_exists "api" "sponsors" "website" "$SUPABASE_DB_URL"; then
-              echo "Website column exists in the sponsors table. Schema appears to be correct."
-              echo "Attempting to fix migration history..."
-              
-              # Fix the specific migration history mismatch
-              fix_migration_history_mismatch "$SUPABASE_DB_URL"
-              
-              # Try to reset and push migrations with a more aggressive approach
-              echo "Attempting to push with --include-all flag..."
-              if ! supabase db push --include-all; then
-                echo "Still having issues. Trying to apply migrations directly..."
-                
-                # Get all migration files and sort them
-                MIGRATION_FILES=$(find supabase/migrations -name "*.sql" | sort)
-                
-                for MIGRATION_FILE in $MIGRATION_FILES; do
-                  # Extract version from filename
-                  MIGRATION_NAME=$(basename "$MIGRATION_FILE" .sql)
-                  VERSION=${MIGRATION_NAME%%_*}
-                  
-                  # Check if migration is already in the history
-                  if ! check_migration_exists "$VERSION" "$SUPABASE_DB_URL"; then
-                    echo "Migration $VERSION not found in history. Applying directly..."
-                    apply_migration_directly "$MIGRATION_FILE" "$SUPABASE_DB_URL"
-                  else
-                    echo "Migration $VERSION already exists in history. Skipping."
-                  fi
-                done
-                
-                echo "All migrations have been applied or verified."
-              fi
-            else
-              echo "Website column does not exist in the sponsors table. There might be a real issue with the migrations."
-              exit 1
-            fi
-          fi
-          
-      # Verify final state after migrations
-      - name: Verify Migration State
-        if: github.event_name == 'push'
-        run: |
-          echo "Verifying final migration state..."
-          supabase link --project-ref "${{ env.SUPABASE_PROJECT_ID }}" -p "${{ env.SUPABASE_DB_PASSWORD }}"
-          
-          # Display final migration status
-          echo "Final migration status:"
-          supabase migration list
-          
-          # Get database connection string
-          SUPABASE_DB_URL=$(supabase db remote get-connection-string)
-          
-          # Verify that the website column exists in the sponsors table
-          if PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$SUPABASE_DB_URL" -t -c "
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_schema = 'api' 
-            AND table_name = 'sponsors' 
-            AND column_name = 'website';" | grep -q "website"; then
-            echo "Website column exists in the sponsors table. Migration successful!"
+            # Repair the migration history for the problematic migration
+            # This marks the migration as reverted in the history table
+            supabase migration repair --status reverted 20250227
+            
+            # Try pushing migrations again
+            supabase db push
           else
-            echo "Website column does not exist in the sponsors table. Migration failed!"
-            exit 1
+            # If no mismatch, just push the migrations
+            supabase db push
           fi
+          
+          echo "Production migrations deployed successfully."

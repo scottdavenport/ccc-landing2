@@ -5,16 +5,38 @@
 -- the consolidated migration is properly recorded in the migration history table
 -- and removing any redundant migrations.
 
--- Note: We're removing the direct manipulation of the schema_migrations table
--- as this should be handled by the Supabase CLI. Instead, we'll use the
--- migration repair command to fix the migration history.
+-- First, ensure the schema_migrations table exists
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_tables 
+    WHERE schemaname = 'supabase_migrations' 
+    AND tablename = 'schema_migrations'
+  ) THEN
+    -- Create the schema if it doesn't exist
+    CREATE SCHEMA IF NOT EXISTS supabase_migrations;
+    
+    -- Create the schema_migrations table if it doesn't exist
+    CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations (
+      version text PRIMARY KEY,
+      name text,
+      statements text[]
+    );
+  END IF;
+END $$;
 
--- This migration file now serves as a marker for the repair process
--- and doesn't contain any actual SQL statements that modify the schema_migrations table.
+-- Remove the problematic migration if it exists
+DELETE FROM supabase_migrations.schema_migrations 
+WHERE version = '20250227';
 
--- The actual repair process should be run with:
--- supabase migration repair --status applied 20250227183244
--- supabase migration repair --status reverted 20250227
+-- Ensure the consolidated migration is in the history
+INSERT INTO supabase_migrations.schema_migrations (version, name, statements)
+VALUES (
+  '20250227183244', 
+  'consolidated_sponsor_website_fix',
+  ARRAY['-- Consolidated migration that adds website column to sponsors table']
+)
+ON CONFLICT (version) DO NOTHING;
 
--- Adding a simple comment statement to ensure the file contains valid SQL
-SELECT 'Migration history repair marker' AS repair_note;
+-- Add a log message to confirm execution
+SELECT 'Migration history repair completed successfully' AS repair_status;

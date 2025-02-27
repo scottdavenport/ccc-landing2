@@ -99,14 +99,31 @@ If local and remote migration histories diverge:
 
 3. **Repair from Common Point**: Use the repair command to synchronize from the common point:
    ```bash
-   supabase migration repair --status applied <common_timestamp>
+   supabase migration repair --status reverted <problematic_timestamp>
    ```
 
-4. **Consolidated Fix**: If the migration history is severely out of sync, create a consolidated fix migration:
-   ```bash
-   supabase migration new consolidated_fix
+4. **Simplified Approach**: For persistent issues, create a dedicated repair migration:
+   ```sql
+   -- 20250227184420_repair_migration_history.sql
+   
+   -- Remove the problematic migration if it exists
+   DELETE FROM supabase_migrations.schema_migrations 
+   WHERE version = '<problematic_timestamp>';
+   
+   -- Ensure the consolidated migration is in the history
+   INSERT INTO supabase_migrations.schema_migrations (version, name, statements)
+   VALUES (
+     '<correct_timestamp>', 
+     '<migration_name>',
+     ARRAY['-- Migration description']
+   )
+   ON CONFLICT (version) DO NOTHING;
    ```
-   Then edit this migration to ensure the schema is correct and mark previous migrations as applied.
+
+5. **GitHub Actions Integration**: Our CI/CD pipeline now includes specific handling for migration history mismatches:
+   - Detecting "Remote migration versions not found in local migrations directory" errors
+   - Automatically repairing the migration history using `supabase migration repair`
+   - Retrying the migration push after repair
 
 ## Best Practices
 
@@ -309,14 +326,37 @@ From our experience with Supabase migrations, we've learned several important le
 
 We've recently made significant improvements to our migration strategy:
 
-1. **Consolidated Migration Approach**: Created a consolidated migration file (`20250227183244_consolidated_sponsor_website_fix.sql`) that ensures schema correctness, fixes permissions, and repairs migration history in a single file.
+1. **Simplified GitHub Actions Workflow**: Removed complex functions and direct database manipulation in favor of using Supabase CLI's built-in repair commands.
 
-2. **Enhanced GitHub Actions Workflow**: Completely rewrote `.github/workflows/supabase-deploy.yml` with advanced error handling, migration validation, and recovery mechanisms.
+2. **Dedicated Repair Migrations**: Created dedicated migration files for repairing migration history issues that can be applied idempotently.
 
-3. **Comprehensive Documentation**: Expanded this document with detailed best practices, troubleshooting techniques, and lessons learned from our migration experiences.
+3. **Improved Error Detection**: Enhanced our CI/CD pipeline to detect specific migration errors and apply appropriate fixes automatically.
 
-4. **Idempotent Migration Design**: Implemented a more robust approach to making migrations idempotent, ensuring they can be safely run multiple times.
+4. **Consolidated Migrations**: For complex changes, we now use a consolidated approach that ensures all schema changes, permissions, and migration history repairs are handled in a cohesive way.
 
-5. **Migration History Repair**: Added automated migration history repair logic to our deployment workflow.
+5. **Idempotent Design**: All migrations are now designed to be fully idempotent, with explicit checks before making any changes.
 
-These improvements have significantly enhanced the reliability and maintainability of our database migration process.
+## Best Practices for Avoiding Migration Issues
+
+1. **Always Use the CLI**: Generate migration files using the Supabase CLI rather than creating them manually:
+   ```bash
+   supabase migration new my_migration_name
+   ```
+
+2. **Keep Migrations Small**: Break down large changes into smaller, more manageable migrations.
+
+3. **Test Thoroughly**: Test migrations locally and in a staging environment before deploying to production.
+
+4. **Monitor Migration History**: Regularly check migration history to catch issues early.
+
+5. **Use Version Control**: Store migrations in version control to track changes and collaborate with the team.
+
+6. **Document Changes**: Document schema changes and migration strategies to ensure knowledge sharing and consistency.
+
+7. **Avoid Manual Edits**: Avoid making manual edits to the database schema or migration history.
+
+8. **Use Automated Deployment**: Use automated deployment tools like GitHub Actions to streamline the deployment process.
+
+9. **Implement Rollbacks**: Implement rollback strategies for migrations to quickly recover from errors.
+
+10. **Continuously Improve**: Continuously improve and refine your migration strategy based on lessons learned and best practices.

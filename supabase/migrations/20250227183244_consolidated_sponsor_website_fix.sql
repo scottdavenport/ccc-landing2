@@ -2,65 +2,53 @@
 -- Migration: consolidated_sponsor_website_fix
 -- Created at: 2025-02-27 18:32:44
 
--- This is a consolidated migration that ensures:
--- 1. The website column exists in the sponsors table
--- 2. All permissions are properly set
--- 3. The migration history is consistent
+-- This is a consolidated migration that adds the website column to the sponsors table
+-- and ensures all necessary permissions are set correctly.
+-- The migration is designed to be idempotent and can be run multiple times safely.
 
--- PART 1: Ensure website column exists
-DO $$ 
-BEGIN 
+-- Add the website column to the sponsors table if it doesn't exist
+DO $$
+BEGIN
   IF NOT EXISTS (
-    SELECT FROM information_schema.columns 
+    SELECT 1 FROM information_schema.columns 
     WHERE table_schema = 'api' 
     AND table_name = 'sponsors' 
     AND column_name = 'website'
   ) THEN
     ALTER TABLE api.sponsors ADD COLUMN website TEXT;
-    RAISE NOTICE 'Added website column to api.sponsors table';
+    RAISE NOTICE 'Added website column to sponsors table';
   ELSE
-    RAISE NOTICE 'website column already exists in api.sponsors table';
+    RAISE NOTICE 'Website column already exists in sponsors table, skipping';
   END IF;
 END $$;
 
--- PART 2: Ensure permissions are properly set
-GRANT USAGE ON SCHEMA api TO anon, authenticated;
-GRANT SELECT ON api.sponsors TO anon, authenticated;
-GRANT INSERT, UPDATE, DELETE ON api.sponsors TO authenticated;
-
--- Ensure RLS policies are correctly set
+-- Ensure RLS is enabled on the sponsors table
 ALTER TABLE api.sponsors ENABLE ROW LEVEL SECURITY;
 
--- Recreate RLS policies to ensure they're properly configured
-DROP POLICY IF EXISTS "Enable read access for all users" ON api.sponsors;
-CREATE POLICY "Enable read access for all users" 
-ON api.sponsors
-FOR SELECT 
-USING (true);
+-- Update or create the RLS policies for the sponsors table
+DO $$
+BEGIN
+  -- Drop existing policies if they exist to avoid conflicts
+  DROP POLICY IF EXISTS "Allow anonymous read access to sponsors" ON api.sponsors;
+  DROP POLICY IF EXISTS "Allow authenticated read access to sponsors" ON api.sponsors;
+  
+  -- Create the policies
+  CREATE POLICY "Allow anonymous read access to sponsors" 
+    ON api.sponsors FOR SELECT 
+    TO anon 
+    USING (true);
+  
+  CREATE POLICY "Allow authenticated read access to sponsors" 
+    ON api.sponsors FOR SELECT 
+    TO authenticated 
+    USING (true);
+    
+  RAISE NOTICE 'Updated RLS policies for sponsors table';
+END $$;
 
-DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON api.sponsors;
-CREATE POLICY "Enable insert for authenticated users only" 
-ON api.sponsors
-FOR INSERT 
-WITH CHECK (auth.role() = 'authenticated');
+-- Grant appropriate permissions
+GRANT SELECT ON api.sponsors TO anon;
+GRANT SELECT ON api.sponsors TO authenticated;
 
-DROP POLICY IF EXISTS "Enable update for authenticated users only" ON api.sponsors;
-CREATE POLICY "Enable update for authenticated users only" 
-ON api.sponsors
-FOR UPDATE 
-USING (auth.role() = 'authenticated');
-
-DROP POLICY IF EXISTS "Enable delete for authenticated users only" ON api.sponsors;
-CREATE POLICY "Enable delete for authenticated users only" 
-ON api.sponsors
-FOR DELETE 
-USING (auth.role() = 'authenticated');
-
--- PART 3: Clean up migration history
--- This part ensures that all previous migrations related to the website column
--- are marked as applied in the migration history
-
--- Remove the problematic DO block that tries to insert into schema_migrations
--- Supabase CLI will handle the migration history automatically
-
--- We don't need an @UNDO section as this migration is idempotent
+-- Add a log message to confirm execution
+SELECT 'Consolidated sponsor website fix completed successfully' AS migration_status;
