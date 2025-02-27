@@ -7,12 +7,11 @@ import { useAuth } from '@/lib/auth';
 
 function DebugInfo() {
   const [branchName, setBranchName] = useState<string>('Loading...');
-  const [diagnosticResult, setDiagnosticResult] = useState<any>(null);
+  const [diagnosticResult, setDiagnosticResult] = useState<Record<string, unknown> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
   useEffect(() => {
     // Get the current branch name from the Supabase URL
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
     const branch = process.env.NEXT_PUBLIC_SUPABASE_BRANCH || 'unknown';
     setBranchName(branch);
   }, []);
