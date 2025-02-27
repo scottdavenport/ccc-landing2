@@ -48,24 +48,23 @@ jobs:
               echo "Validating SQL syntax in $migration..."
               # Check basic SQL syntax (this won't catch all errors but will catch major ones)
               cat "$migration" | grep -v "^--" | grep -q ";" || { echo "Error: No SQL statements found in $migration"; exit 1; }
-              
-              # Check for idempotent patterns
-              if ! grep -q "IF NOT EXISTS\|IF EXISTS\|DROP POLICY IF EXISTS\|CREATE OR REPLACE\|DO \$\$" "$migration"; then
-                echo "Warning: Migration $migration may not be idempotent. Consider using IF NOT EXISTS or similar patterns."
-              fi
             done
             
-            echo "All migration files passed basic validation"
+            # Try a dry run of the migrations
+            echo "Performing dry run of migrations..."
+            supabase db push --dry-run || { echo "Error: Migrations failed dry run validation"; exit 1; }
           else
-            echo "No migration files found to validate"
+            echo "No migration files found to validate."
           fi
+          
+          echo "Migration validation complete."
 
       # Common function for migration deployment with enhanced error handling
       - name: Setup Migration Helper Functions
         if: github.event_name == 'push'
         run: |
           # Function to check if a column exists in a table
-          check_column_exists() {
+          function check_column_exists() {
             local schema=$1
             local table=$2
             local column=$3
@@ -82,7 +81,7 @@ jobs:
           }
           
           # Function to check if a migration exists in the schema_migrations table
-          check_migration_exists() {
+          function check_migration_exists() {
             local version=$1
             local db_url=$2
             
@@ -94,75 +93,9 @@ jobs:
             return $?
           }
           
-          # Function to add a migration to the schema_migrations table
-          add_migration_to_history() {
-            local version=$1
-            local name=$2
-            local db_url=$3
-            
-            echo "Adding migration $version to history..."
-            PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$db_url" -c "
-              INSERT INTO supabase_migrations.schema_migrations (version, name, statements)
-              VALUES ('$version', '$name', ARRAY['-- Migration added by GitHub Actions'])
-              ON CONFLICT (version) DO NOTHING;"
-          }
-          
-          # Function to remove a migration from the schema_migrations table
-          remove_migration_from_history() {
-            local version=$1
-            local db_url=$2
-            
-            echo "Removing migration $version from history..."
-            PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$db_url" -c "
-              DELETE FROM supabase_migrations.schema_migrations
-              WHERE version = '$version';"
-          }
-          
-          # Function to apply a migration file directly
-          apply_migration_directly() {
-            local migration_file=$1
-            local db_url=$2
-            
-            echo "Applying migration directly: $migration_file"
-            PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$db_url" -f "$migration_file"
-            
-            # Get the migration version and name
-            local migration_name=$(basename "$migration_file" .sql)
-            local version=${migration_name%%_*}
-            local name=${migration_name#*_}
-            
-            # Add to migration history
-            add_migration_to_history "$version" "$name" "$db_url"
-          }
-          
-          # Function to fix the specific migration history issue we're seeing
-          fix_migration_history_mismatch() {
-            local db_url=$1
-            
-            echo "Fixing migration history mismatch..."
-            
-            # Check if the problematic migration exists
-            if check_migration_exists "20250227" "$db_url"; then
-              echo "Found problematic migration 20250227. Removing it from history..."
-              remove_migration_from_history "20250227" "$db_url"
-            fi
-            
-            # Check if the consolidated migration exists
-            if ! check_migration_exists "20250227183244" "$db_url"; then
-              echo "Adding consolidated migration to history..."
-              add_migration_to_history "20250227183244" "consolidated_sponsor_website_fix" "$db_url"
-            fi
-            
-            echo "Migration history fixed."
-          }
-          
-          # Export functions for use in other steps
-          echo "check_column_exists() { $check_column_exists; }" >> $GITHUB_ENV
-          echo "check_migration_exists() { $check_migration_exists; }" >> $GITHUB_ENV
-          echo "add_migration_to_history() { $add_migration_to_history; }" >> $GITHUB_ENV
-          echo "remove_migration_from_history() { $remove_migration_from_history; }" >> $GITHUB_ENV
-          echo "apply_migration_directly() { $apply_migration_directly; }" >> $GITHUB_ENV
-          echo "fix_migration_history_mismatch() { $fix_migration_history_mismatch; }" >> $GITHUB_ENV
+          # Export functions so they can be used in subsequent steps
+          export -f check_column_exists
+          export -f check_migration_exists
 
       # For feature branch pushes, deploy to preview
       - name: Deploy Migrations (Preview)

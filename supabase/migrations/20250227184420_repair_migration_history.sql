@@ -15,3 +15,6 @@
 -- The actual repair process should be run with:
 -- supabase migration repair --status applied 20250227183244
 -- supabase migration repair --status reverted 20250227
+
+-- Adding a simple comment statement to ensure the file contains valid SQL
+SELECT 'Migration history repair marker' AS repair_note;
