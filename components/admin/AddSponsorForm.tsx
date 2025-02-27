@@ -154,10 +154,6 @@ export function AddSponsorForm({ onSponsorAdded, sponsorToEdit }: AddSponsorForm
     }
   };
 
-  // Generate an array of years (current year ± 3 years)
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 7 }, (_, i) => currentYear - 3 + i);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
