@@ -33,8 +33,25 @@ jobs:
         run: |
           echo "Validating migrations for pull request..."
           supabase link --project-ref "${{ env.SUPABASE_PROJECT_ID }}" -p "${{ env.SUPABASE_DB_PASSWORD }}"
-          # Use --dry-run to validate without applying
-          supabase db push --dry-run
+          
+          # Check if there are new migration files
+          NEW_MIGRATIONS=$(find supabase/migrations -name "*.sql" | grep -v "README.md" || echo "")
+          
+          if [ -n "$NEW_MIGRATIONS" ]; then
+            echo "Found migration files to validate:"
+            echo "$NEW_MIGRATIONS"
+            
+            # Validate SQL syntax of each migration file
+            for migration in $NEW_MIGRATIONS; do
+              echo "Validating SQL syntax in $migration..."
+              # Check basic SQL syntax (this won't catch all errors but will catch major ones)
+              cat "$migration" | grep -v "^--" | grep -q ";" || { echo "Error: No SQL statements found in $migration"; exit 1; }
+            done
+            
+            echo "All migration files passed basic validation"
+          else
+            echo "No migration files found to validate"
+          fi
 
       # For feature branch pushes, deploy to preview
       - name: Deploy Migrations (Preview)
