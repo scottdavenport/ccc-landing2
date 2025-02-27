@@ -49,7 +49,7 @@ Automatically updates the `updated_at` timestamp when a record is updated.
 
 The database schema is defined in migration files located in the `supabase/migrations` directory:
 
-- `20250227_initial_schema.sql`: Creates the initial schema, tables, and relationships.
-- `20250227_functions_and_policies.sql`: Creates functions, triggers, and policies.
+- `20250227000000_initial_schema.sql`: Creates the initial schema, tables, and relationships.
+- `20250227000001_functions_and_policies.sql`: Creates functions, triggers, and policies.
 
 These migrations are automatically applied when deploying to Supabase.

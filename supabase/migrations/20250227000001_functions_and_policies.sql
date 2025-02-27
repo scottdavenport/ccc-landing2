@@ -1,3 +1,6 @@
+-- Create schema if it doesn't exist
+CREATE SCHEMA IF NOT EXISTS api;
+
 -- Create or replace function to automatically update the updated_at timestamp
 CREATE OR REPLACE FUNCTION api.set_updated_at()
 RETURNS TRIGGER AS $$
