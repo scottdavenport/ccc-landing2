@@ -36,33 +36,34 @@ case $COMMAND in
             exit 1
         fi
         
-        # Create migration file
-        TIMESTAMP=$(date +%Y%m%d%H%M%S)
-        MIGRATION_NAME="${TIMESTAMP}_${2}.sql"
+        # Create migration file using Supabase CLI
+        echo "Creating new migration: $2"
+        supabase migration new "$2"
         
-        echo "Creating new migration: $MIGRATION_NAME"
-        cat > "supabase/migrations/$MIGRATION_NAME" << EOL
--- Migration: ${2}
--- Created at: $(date)
-
--- Write your "up" migration SQL here
-
----- Create "down" migration by adding @UNDO comment
--- @UNDO
-
--- Write your "down" migration SQL here
-
-EOL
-        
-        echo "Created migration file: supabase/migrations/$MIGRATION_NAME"
+        echo "Created migration file. Check supabase/migrations/ directory."
         ;;
     "status")
         echo "Checking migration status..."
-        supabase db remote changes
+        supabase migration list
+        ;;
+    "pull")
+        echo "Pulling remote database state..."
+        supabase db pull
+        ;;
+    "repair")
+        # Check if migration ID is provided
+        if [ -z "$2" ]; then
+            echo "Error: Please provide a migration ID"
+            echo "Usage: ./scripts/db-migrate.sh repair migration_id"
+            exit 1
+        fi
+        
+        echo "Repairing migration: $2"
+        supabase migration repair --status reverted "$2"
         ;;
     *)
         echo "Unknown command: $COMMAND"
-        echo "Usage: ./scripts/db-migrate.sh [up|down|new|status]"
+        echo "Usage: ./scripts/db-migrate.sh [up|down|new|status|pull|repair]"
         exit 1
         ;;
 esac

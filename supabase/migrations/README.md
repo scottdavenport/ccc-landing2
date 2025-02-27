@@ -19,17 +19,54 @@ This allows us to:
 - Test schema changes safely in development
 - Maintain different data sets for different environments
 
-## Automated Deployments
+## Migration Workflow
 
-Migrations are automatically deployed via GitHub Actions when:
+### Creating Migrations
 
-1. Changes are pushed to the `main` branch (deploys to production schema)
-2. Changes are pushed to `feature/*` branches (deploys to development schema)
-3. Pull requests are created that include migration changes
+Always use the Supabase CLI to create new migrations:
 
-The workflow is defined in `.github/workflows/supabase-deploy.yml`.
+```bash
+# Create a new migration
+supabase migration new migration_name
+```
 
-### Required Secrets
+This ensures consistent naming and proper tracking in the migration history.
+
+### Testing Migrations
+
+Always test migrations locally before deploying:
+
+```bash
+# Apply migrations locally
+supabase db reset
+```
+
+### Deploying Migrations
+
+We use Supabase Preview for deploying migrations from pull requests. This happens automatically when you create a PR that includes migration changes.
+
+**Note:** We previously used GitHub Actions for deployments, but this has been disabled to avoid conflicts with Supabase Preview.
+
+## Troubleshooting
+
+If you encounter migration conflicts:
+
+1. Pull the current state of the remote database:
+   ```bash
+   supabase db pull
+   ```
+
+2. Repair the migration history if needed:
+   ```bash
+   supabase migration repair --status reverted <migration_id>
+   ```
+
+3. Reset your local database:
+   ```bash
+   supabase db reset
+   ```
+
+## Required Secrets
 
 The following secrets must be set in your GitHub repository:
 
@@ -57,4 +94,3 @@ Make sure to set your environment variables:
 ```bash
 export SUPABASE_ACCESS_TOKEN=your_access_token
 export SUPABASE_PROJECT_ID=your_project_id
-```
