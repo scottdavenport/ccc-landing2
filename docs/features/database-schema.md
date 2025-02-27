@@ -51,5 +51,16 @@ The database schema is defined in migration files located in the `supabase/migra
 
 - `20250227000000_initial_schema.sql`: Creates the initial schema, tables, and relationships.
 - `20250227000001_functions_and_policies.sql`: Creates functions, triggers, and policies.
+- `20250227000002_rls_policies.sql`: Sets up Row Level Security policies for tables.
 
 These migrations are automatically applied when deploying to Supabase.
+
+## Row Level Security (RLS) Policies
+
+The following RLS policies are configured:
+
+### Anonymous Users (anon role)
+- Read-only access to `sponsors` and `sponsor_levels` tables
+
+### Authenticated Users (authenticated role)
+- Full access (select, insert, update, delete) to `sponsors` and `sponsor_levels` tables
