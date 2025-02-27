@@ -14,6 +14,8 @@ This document outlines our approach to managing database migrations in our Supab
 
 5. **One Change, One Migration**: Each logical change should have its own migration file. Avoid creating multiple migration files that make the same change.
 
+6. **Consolidated Approach**: For complex changes or fixing migration history issues, use a consolidated approach that ensures schema correctness, fixes permissions, and repairs migration history in a single file.
+
 ## Creating New Migrations
 
 To create a new migration:
@@ -137,6 +139,8 @@ If local and remote migration histories diverge:
 14. **Use Transactions for Related Changes**: Wrap related changes in a transaction to ensure they're applied atomically.
 
 15. **Consider Data Migration Impact**: Be mindful of how schema changes might affect existing data.
+
+16. **Consolidate When Necessary**: When facing complex migration issues, use a consolidated approach that ensures schema correctness, fixes permissions, and repairs migration history in a single file.
 
 ## Troubleshooting
 
@@ -277,6 +281,9 @@ Our deployment workflow includes several advanced features:
 3. **Direct SQL Application**: Falls back to direct SQL application when standard methods fail.
 4. **Migration History Repair**: Automatically repairs the migration history when needed.
 5. **Comprehensive Error Handling**: Handles common errors gracefully with detailed logging.
+6. **Retry Mechanisms**: Implements intelligent retry logic for transient failures.
+7. **Environment-Specific Logic**: Adapts deployment strategy based on the target environment.
+8. **Validation Steps**: Includes pre and post-deployment validation to ensure schema integrity.
 
 ## Lessons Learned
 
@@ -292,3 +299,24 @@ From our experience with Supabase migrations, we've learned several important le
 8. **Be Careful with Timestamps**: Inconsistent timestamp formats can cause ordering issues.
 9. **Include Permissions in Migrations**: Always include necessary permissions and RLS policies in migrations.
 10. **Use Consolidated Fix Migrations**: When migration history gets out of sync, consolidated fix migrations can save the day.
+11. **Avoid Multiple Migrations for Same Change**: Creating multiple migrations for the same change leads to conflicts.
+12. **Implement Robust CI/CD**: A well-designed CI/CD pipeline with error handling is essential for reliable deployments.
+13. **Keep Migrations Simple**: Complex migrations are harder to debug and more likely to fail.
+14. **Monitor Migration History**: Regularly check migration history to catch issues early.
+15. **Understand Supabase CLI Behavior**: Different Supabase CLI commands handle migrations differently.
+
+## Recent Improvements
+
+We've recently made significant improvements to our migration strategy:
+
+1. **Consolidated Migration Approach**: Created a consolidated migration file (`20250227183244_consolidated_sponsor_website_fix.sql`) that ensures schema correctness, fixes permissions, and repairs migration history in a single file.
+
+2. **Enhanced GitHub Actions Workflow**: Completely rewrote `.github/workflows/supabase-deploy.yml` with advanced error handling, migration validation, and recovery mechanisms.
+
+3. **Comprehensive Documentation**: Expanded this document with detailed best practices, troubleshooting techniques, and lessons learned from our migration experiences.
+
+4. **Idempotent Migration Design**: Implemented a more robust approach to making migrations idempotent, ensuring they can be safely run multiple times.
+
+5. **Migration History Repair**: Added automated migration history repair logic to our deployment workflow.
+
+These improvements have significantly enhanced the reliability and maintainability of our database migration process.
