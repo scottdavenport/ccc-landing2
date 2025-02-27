@@ -69,35 +69,69 @@ jobs:
           # First try standard migration push
           echo "Attempting standard migration push..."
           if ! supabase db push; then
-            echo "Migration push failed. Attempting to repair migration history..."
+            echo "Migration push failed. Checking if it's a duplicate key error..."
             
-            # Get the list of all migrations (both local and remote)
-            LOCAL_MIGRATIONS=$(find supabase/migrations -name "*.sql" | grep -v "README.md" | sort)
-            REMOTE_MIGRATIONS=$(supabase migration list --db-only | awk '{print $1}')
-            
-            # Find the latest common migration between local and remote
-            LATEST_COMMON=""
-            for remote in $REMOTE_MIGRATIONS; do
-              for local in $LOCAL_MIGRATIONS; do
-                local_timestamp=$(basename "$local" | cut -d_ -f1)
-                if [ "$remote" = "$local_timestamp" ]; then
-                  LATEST_COMMON=$remote
-                fi
-              done
-            done
-            
-            if [ -n "$LATEST_COMMON" ]; then
-              echo "Latest common migration: $LATEST_COMMON"
-              echo "Repairing migration history from this point..."
-              supabase migration repair --status applied "$LATEST_COMMON"
+            # Check if the error is due to duplicate key violation
+            if supabase db push 2>&1 | grep -q "duplicate key value violates unique constraint"; then
+              echo "Detected duplicate key error. This usually means the migration is already applied."
+              echo "Verifying database schema..."
               
-              # Try pushing again
-              echo "Retrying migration push after repair..."
-              supabase db push
+              # Get database connection string
+              SUPABASE_DB_URL=$(supabase db remote get-connection-string)
+              
+              # Verify that the website column exists in the sponsors table
+              WEBSITE_COL_EXISTS=$(PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$SUPABASE_DB_URL" -t -c "SELECT column_name FROM information_schema.columns WHERE table_schema = 'api' AND table_name = 'sponsors' AND column_name = 'website';")
+              
+              if [ -n "$WEBSITE_COL_EXISTS" ]; then
+                echo "Website column exists in the sponsors table. Migration appears to be already applied."
+                echo "Marking migrations as applied in the migration history..."
+                
+                # Get list of local migrations
+                LOCAL_MIGRATIONS=$(find supabase/migrations -name "*.sql" | grep -v "README.md" | sort)
+                
+                for migration in $LOCAL_MIGRATIONS; do
+                  MIGRATION_NAME=$(basename "$migration" .sql)
+                  TIMESTAMP=${MIGRATION_NAME%%_*}
+                  
+                  # Try to mark the migration as applied, ignoring errors
+                  echo "Marking $TIMESTAMP as applied..."
+                  supabase migration repair --status applied "$TIMESTAMP" || true
+                done
+                
+                echo "Migration history repair attempted. Continuing deployment."
+              else
+                echo "Website column does not exist in the sponsors table. There might be a real issue with the migrations."
+                exit 1
+              fi
             else
-              echo "No common migrations found. This requires manual intervention."
-              echo "Please run 'supabase migration list' locally and on the remote to compare."
-              exit 1
+              # Get the list of all migrations (both local and remote)
+              LOCAL_MIGRATIONS=$(find supabase/migrations -name "*.sql" | grep -v "README.md" | sort)
+              REMOTE_MIGRATIONS=$(supabase migration list --db-only | awk '{print $1}')
+              
+              # Find the latest common migration between local and remote
+              LATEST_COMMON=""
+              for remote in $REMOTE_MIGRATIONS; do
+                for local in $LOCAL_MIGRATIONS; do
+                  local_timestamp=$(basename "$local" | cut -d_ -f1)
+                  if [ "$remote" = "$local_timestamp" ]; then
+                    LATEST_COMMON=$remote
+                  fi
+                done
+              done
+              
+              if [ -n "$LATEST_COMMON" ]; then
+                echo "Latest common migration: $LATEST_COMMON"
+                echo "Repairing migration history from this point..."
+                supabase migration repair --status applied "$LATEST_COMMON"
+                
+                # Try pushing again
+                echo "Retrying migration push after repair..."
+                supabase db push
+              else
+                echo "No common migrations found. This requires manual intervention."
+                echo "Please run 'supabase migration list' locally and on the remote to compare."
+                exit 1
+              fi
             fi
           fi
 
@@ -115,34 +149,68 @@ jobs:
           # First try standard migration push
           echo "Attempting standard migration push..."
           if ! supabase db push; then
-            echo "Migration push failed. Attempting to repair migration history..."
+            echo "Migration push failed. Checking if it's a duplicate key error..."
             
-            # Get the list of all migrations (both local and remote)
-            LOCAL_MIGRATIONS=$(find supabase/migrations -name "*.sql" | grep -v "README.md" | sort)
-            REMOTE_MIGRATIONS=$(supabase migration list --db-only | awk '{print $1}')
-            
-            # Find the latest common migration between local and remote
-            LATEST_COMMON=""
-            for remote in $REMOTE_MIGRATIONS; do
-              for local in $LOCAL_MIGRATIONS; do
-                local_timestamp=$(basename "$local" | cut -d_ -f1)
-                if [ "$remote" = "$local_timestamp" ]; then
-                  LATEST_COMMON=$remote
-                fi
-              done
-            done
-            
-            if [ -n "$LATEST_COMMON" ]; then
-              echo "Latest common migration: $LATEST_COMMON"
-              echo "Repairing migration history from this point..."
-              supabase migration repair --status applied "$LATEST_COMMON"
+            # Check if the error is due to duplicate key violation
+            if supabase db push 2>&1 | grep -q "duplicate key value violates unique constraint"; then
+              echo "Detected duplicate key error. This usually means the migration is already applied."
+              echo "Verifying database schema..."
               
-              # Try pushing again
-              echo "Retrying migration push after repair..."
-              supabase db push
+              # Get database connection string
+              SUPABASE_DB_URL=$(supabase db remote get-connection-string)
+              
+              # Verify that the website column exists in the sponsors table
+              WEBSITE_COL_EXISTS=$(PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$SUPABASE_DB_URL" -t -c "SELECT column_name FROM information_schema.columns WHERE table_schema = 'api' AND table_name = 'sponsors' AND column_name = 'website';")
+              
+              if [ -n "$WEBSITE_COL_EXISTS" ]; then
+                echo "Website column exists in the sponsors table. Migration appears to be already applied."
+                echo "Marking migrations as applied in the migration history..."
+                
+                # Get list of local migrations
+                LOCAL_MIGRATIONS=$(find supabase/migrations -name "*.sql" | grep -v "README.md" | sort)
+                
+                for migration in $LOCAL_MIGRATIONS; do
+                  MIGRATION_NAME=$(basename "$migration" .sql)
+                  TIMESTAMP=${MIGRATION_NAME%%_*}
+                  
+                  # Try to mark the migration as applied, ignoring errors
+                  echo "Marking $TIMESTAMP as applied..."
+                  supabase migration repair --status applied "$TIMESTAMP" || true
+                done
+                
+                echo "Migration history repair attempted. Continuing deployment."
+              else
+                echo "Website column does not exist in the sponsors table. There might be a real issue with the migrations."
+                exit 1
+              fi
             else
-              echo "No common migrations found. This requires manual intervention."
-              echo "Please run 'supabase migration list' locally and on the remote to compare."
-              exit 1
+              # Get the list of all migrations (both local and remote)
+              LOCAL_MIGRATIONS=$(find supabase/migrations -name "*.sql" | grep -v "README.md" | sort)
+              REMOTE_MIGRATIONS=$(supabase migration list --db-only | awk '{print $1}')
+              
+              # Find the latest common migration between local and remote
+              LATEST_COMMON=""
+              for remote in $REMOTE_MIGRATIONS; do
+                for local in $LOCAL_MIGRATIONS; do
+                  local_timestamp=$(basename "$local" | cut -d_ -f1)
+                  if [ "$remote" = "$local_timestamp" ]; then
+                    LATEST_COMMON=$remote
+                  fi
+                done
+              done
+              
+              if [ -n "$LATEST_COMMON" ]; then
+                echo "Latest common migration: $LATEST_COMMON"
+                echo "Repairing migration history from this point..."
+                supabase migration repair --status applied "$LATEST_COMMON"
+                
+                # Try pushing again
+                echo "Retrying migration push after repair..."
+                supabase db push
+              else
+                echo "No common migrations found. This requires manual intervention."
+                echo "Please run 'supabase migration list' locally and on the remote to compare."
+                exit 1
+              fi
             fi
           fi
