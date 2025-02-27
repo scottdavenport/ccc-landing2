@@ -12,7 +12,23 @@ if [ -z "$SUPABASE_DB_URL" ]; then
 fi
 
 echo "Applying website field migration..."
-psql "$SUPABASE_DB_URL" -c "ALTER TABLE api.sponsors ADD COLUMN IF NOT EXISTS website TEXT;"
+psql "$SUPABASE_DB_URL" << EOF
+-- Add column if it doesn't exist (idempotent migration)
+DO \$\$ 
+BEGIN 
+  IF NOT EXISTS (
+    SELECT FROM information_schema.columns 
+    WHERE table_schema = 'api' 
+    AND table_name = 'sponsors' 
+    AND column_name = 'website'
+  ) THEN
+    ALTER TABLE api.sponsors ADD COLUMN website TEXT;
+    RAISE NOTICE 'Added website column to api.sponsors table';
+  ELSE
+    RAISE NOTICE 'website column already exists in api.sponsors table';
+  END IF;
+END \$\$;
+EOF
 
 if [ $? -eq 0 ]; then
     echo "Migration applied successfully!"

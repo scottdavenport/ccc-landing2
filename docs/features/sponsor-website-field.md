@@ -7,7 +7,7 @@ This feature adds an optional website field to sponsors in the system. This allo
 
 ### Database Changes
 - Added a `website` column to the `api.sponsors` table as a TEXT field
-- Migration file: `20240227_add_website_to_sponsors.sql`
+- Migration file: `20250227_add_website_to_sponsors.sql`
 
 ### UI Changes
 - Added a website input field to the Add/Edit Sponsor form
