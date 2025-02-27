@@ -11,6 +11,7 @@ export interface Database {
           year: number;
           cloudinary_public_id: string | null;
           image_url: string | null;
+          web_url: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -21,6 +22,7 @@ export interface Database {
           year: number;
           cloudinary_public_id?: string | null;
           image_url?: string | null;
+          web_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -31,6 +33,7 @@ export interface Database {
           year?: number;
           cloudinary_public_id?: string | null;
           image_url?: string | null;
+          web_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
