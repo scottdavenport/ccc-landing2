@@ -86,3 +86,49 @@ If you encounter issues with the seeding process:
 3. Ensure you're authenticated when testing features that require authentication
 4. Check GitHub Actions logs if the automated sync fails
 5. Run the script manually with verbose output for debugging: `bash -x scripts/copy-prod-data-to-branch.sh <branch_name>`
+
+## Troubleshooting Supabase Connection Issues
+
+If you encounter issues with Supabase connections or authentication, try the following steps:
+
+### 1. Verify Environment Variables
+
+Make sure your `.env.local` file has the correct Supabase URL and anon key for your branch:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://your-branch-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SUPABASE_BRANCH=your-branch-name
+```
+
+### 2. Check Row Level Security (RLS) Policies
+
+The application uses RLS policies to control access to the database. If you're getting permission errors, verify that:
+
+- Anonymous users have SELECT access to tables
+- Authenticated users have full access to tables
+- The schema being used is `api`
+
+You can run the diagnostic endpoint at `/api/supabase-diagnostic` to check the connection status.
+
+### 3. Verify Branch Database Sync
+
+If data is missing, the branch database might not be synced with production. Run the data sync script:
+
+```bash
+./scripts/copy-prod-data-to-branch.sh your-branch-name
+```
+
+### 4. Clear Browser Cache and Cookies
+
+Sometimes authentication issues can be resolved by clearing your browser's cache and cookies, especially if you've been switching between different Supabase projects.
+
+### 5. Check for Multiple Supabase URLs
+
+If you see connection errors in the console, check if your application is trying to connect to multiple Supabase URLs. This can happen if:
+
+- The URL in your environment variables doesn't match the one in your code
+- You're using different URLs in different parts of the application
+- Browser storage has cached an old connection
+
+The login page includes a diagnostic tool that can help identify these issues.

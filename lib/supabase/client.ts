@@ -29,3 +29,18 @@ supabase.auth.onAuthStateChange((event, session) => {
     console.log('Supabase auth event:', event, session?.user?.id);
   }
 });
+
+// Add connection error logging
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (event) => {
+    if (event.message && event.message.includes('Supabase')) {
+      console.error('Supabase connection error details:', {
+        message: event.message,
+        source: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        error: event.error
+      });
+    }
+  });
+}

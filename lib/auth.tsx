@@ -44,6 +44,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     console.log('Auth Provider: Attempting sign in...');
     try {
+      // Log the Supabase URL being used
+      console.log('Auth Provider: Using Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -51,12 +54,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Auth Provider: Sign in error:', error);
+        console.error('Auth Provider: Error details:', {
+          message: error.message,
+          status: error.status,
+          name: error.name
+        });
         throw error;
       }
 
       console.log('Auth Provider: Sign in successful', data.user?.id);
     } catch (err) {
       console.error('Auth Provider: Unexpected error during sign in:', err);
+      if (err instanceof Error) {
+        console.error('Auth Provider: Error details:', {
+          message: err.message,
+          name: err.name,
+          stack: err.stack
+        });
+      }
       throw err;
     }
   };

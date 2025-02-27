@@ -1,17 +1,59 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/lib/auth';
 
 function DebugInfo() {
+  const [branchName, setBranchName] = useState<string>('Loading...');
+  const [diagnosticResult, setDiagnosticResult] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  useEffect(() => {
+    // Get the current branch name from the Supabase URL
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const branch = process.env.NEXT_PUBLIC_SUPABASE_BRANCH || 'unknown';
+    setBranchName(branch);
+  }, []);
+
+  const runDiagnostic = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/supabase-diagnostic');
+      const data = await response.json();
+      setDiagnosticResult(data);
+      console.log('Diagnostic result:', data);
+    } catch (error) {
+      console.error('Error running diagnostic:', error);
+      setDiagnosticResult({ error: error instanceof Error ? error.message : 'Unknown error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="mt-4 p-4 bg-white/80 rounded-lg text-sm">
       <h3 className="font-semibold mb-2">Debug Info</h3>
       <div>
         <p>Supabase URL: {process.env.NEXT_PUBLIC_SUPABASE_URL || 'Not set'}</p>
         <p>Has Anon Key: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Yes' : 'No'}</p>
+        <p>Branch: {branchName}</p>
+        <p>Environment: {process.env.NODE_ENV}</p>
+        
+        <button 
+          onClick={runDiagnostic}
+          disabled={isLoading}
+          className="mt-2 px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs"
+        >
+          {isLoading ? 'Running...' : 'Run Diagnostic'}
+        </button>
+        
+        {diagnosticResult && (
+          <div className="mt-2 p-2 bg-gray-100 rounded overflow-auto max-h-40">
+            <pre className="text-xs">{JSON.stringify(diagnosticResult, null, 2)}</pre>
+          </div>
+        )}
       </div>
     </div>
   );
