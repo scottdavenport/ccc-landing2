@@ -1,10 +1,10 @@
 -- Seed data for sponsor_levels
-INSERT INTO api.sponsor_levels (id, name, description, display_order, created_at)
+INSERT INTO api.sponsor_levels (id, name, amount, created_at, updated_at)
 VALUES
-  ('11111111-1111-1111-1111-111111111111', 'Platinum', 'Top-tier sponsorship with maximum visibility', 1, now()),
-  ('22222222-2222-2222-2222-222222222222', 'Gold', 'Premium sponsorship with excellent visibility', 2, now()),
-  ('33333333-3333-3333-3333-333333333333', 'Silver', 'Mid-tier sponsorship with good visibility', 3, now()),
-  ('44444444-4444-4444-4444-444444444444', 'Bronze', 'Entry-level sponsorship with basic visibility', 4, now())
+  ('11111111-1111-1111-1111-111111111111', 'Platinum', 10000, now(), now()),
+  ('22222222-2222-2222-2222-222222222222', 'Gold', 5000, now(), now()),
+  ('33333333-3333-3333-3333-333333333333', 'Silver', 2500, now(), now()),
+  ('44444444-4444-4444-4444-444444444444', 'Bronze', 1000, now(), now())
 ON CONFLICT (id) DO NOTHING;
 
 -- Seed data for sponsors
