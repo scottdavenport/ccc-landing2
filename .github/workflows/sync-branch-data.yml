@@ -1,0 +1,80 @@
+name: Sync Branch Database with Production Data
+
+on:
+  # Run when a new branch is created
+  create:
+    branches:
+      - '**'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to sync data to'
+        required: true
+        default: 'development'
+  
+  # Run on a schedule (once per day)
+  schedule:
+    - cron: '0 0 * * *'  # Runs at midnight UTC every day
+
+jobs:
+  sync-data:
+    name: Sync Branch Database with Production Data
+    runs-on: ubuntu-latest
+    
+    # Skip if it's a tag creation event
+    if: github.event_name != 'create' || github.event.ref_type == 'branch'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install Supabase CLI
+        run: npm install -g supabase
+      
+      - name: Determine branch name
+        id: branch
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "BRANCH_NAME=${{ github.event.inputs.branch }}" >> $GITHUB_ENV
+          elif [ "${{ github.event_name }}" == "create" ]; then
+            echo "BRANCH_NAME=${{ github.event.ref }}" >> $GITHUB_ENV
+          else
+            # For scheduled runs, sync all non-main branches
+            echo "Running for all branches"
+          fi
+      
+      - name: Make script executable
+        run: chmod +x ./scripts/copy-prod-data-to-branch.sh
+      
+      - name: Sync specific branch (for create or manual trigger)
+        if: github.event_name == 'create' || github.event_name == 'workflow_dispatch'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROD_DB_URL: ${{ secrets.PROD_DB_URL }}
+        run: |
+          # Extract branch name without refs/heads/ prefix
+          BRANCH=${BRANCH_NAME#refs/heads/}
+          echo "Syncing data for branch: $BRANCH"
+          ./scripts/copy-prod-data-to-branch.sh "$BRANCH"
+      
+      - name: Sync all branches (for scheduled runs)
+        if: github.event_name == 'schedule'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROD_DB_URL: ${{ secrets.PROD_DB_URL }}
+        run: |
+          # Get all Supabase branch projects except main
+          BRANCHES=$(supabase projects list --access-token $SUPABASE_ACCESS_TOKEN | grep -v "main" | awk '{print $3}')
+          
+          # Loop through each branch and sync data
+          for BRANCH in $BRANCHES; do
+            echo "Syncing data for branch: $BRANCH"
+            ./scripts/copy-prod-data-to-branch.sh "$BRANCH"
+          done
