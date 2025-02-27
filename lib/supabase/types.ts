@@ -5,6 +5,7 @@ export type Sponsor = {
   year: number;
   cloudinary_public_id?: string;
   image_url?: string;
+  web_url?: string;
   created_at: string;
   updated_at: string;
 };
