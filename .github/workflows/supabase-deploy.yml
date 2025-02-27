@@ -100,11 +100,22 @@ jobs:
             local name=$2
             local db_url=$3
             
-            echo "Adding migration $version to schema_migrations table..."
+            echo "Adding migration $version to history..."
             PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$db_url" -c "
               INSERT INTO supabase_migrations.schema_migrations (version, name, statements)
               VALUES ('$version', '$name', ARRAY['-- Migration added by GitHub Actions'])
               ON CONFLICT (version) DO NOTHING;"
+          }
+          
+          # Function to remove a migration from the schema_migrations table
+          remove_migration_from_history() {
+            local version=$1
+            local db_url=$2
+            
+            echo "Removing migration $version from history..."
+            PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$db_url" -c "
+              DELETE FROM supabase_migrations.schema_migrations
+              WHERE version = '$version';"
           }
           
           # Function to apply a migration file directly
@@ -124,11 +135,34 @@ jobs:
             add_migration_to_history "$version" "$name" "$db_url"
           }
           
+          # Function to fix the specific migration history issue we're seeing
+          fix_migration_history_mismatch() {
+            local db_url=$1
+            
+            echo "Fixing migration history mismatch..."
+            
+            # Check if the problematic migration exists
+            if check_migration_exists "20250227" "$db_url"; then
+              echo "Found problematic migration 20250227. Removing it from history..."
+              remove_migration_from_history "20250227" "$db_url"
+            fi
+            
+            # Check if the consolidated migration exists
+            if ! check_migration_exists "20250227183244" "$db_url"; then
+              echo "Adding consolidated migration to history..."
+              add_migration_to_history "20250227183244" "consolidated_sponsor_website_fix" "$db_url"
+            fi
+            
+            echo "Migration history fixed."
+          }
+          
           # Export functions for use in other steps
           echo "check_column_exists() { $check_column_exists; }" >> $GITHUB_ENV
           echo "check_migration_exists() { $check_migration_exists; }" >> $GITHUB_ENV
           echo "add_migration_to_history() { $add_migration_to_history; }" >> $GITHUB_ENV
+          echo "remove_migration_from_history() { $remove_migration_from_history; }" >> $GITHUB_ENV
           echo "apply_migration_directly() { $apply_migration_directly; }" >> $GITHUB_ENV
+          echo "fix_migration_history_mismatch() { $fix_migration_history_mismatch; }" >> $GITHUB_ENV
 
       # For feature branch pushes, deploy to preview
       - name: Deploy Migrations (Preview)
@@ -144,6 +178,12 @@ jobs:
           # Get database connection string
           SUPABASE_DB_URL=$(supabase db remote get-connection-string)
           
+          # Check for the specific migration history mismatch we're seeing
+          if supabase migration list | grep -q "20250227.*20250227183244"; then
+            echo "Detected migration history mismatch. Fixing before proceeding..."
+            fix_migration_history_mismatch "$SUPABASE_DB_URL"
+          fi
+          
           # Try to push migrations, but handle errors gracefully
           if ! supabase db push; then
             echo "Migration push failed. Attempting recovery..."
@@ -152,6 +192,9 @@ jobs:
             if check_column_exists "api" "sponsors" "website" "$SUPABASE_DB_URL"; then
               echo "Website column exists in the sponsors table. Schema appears to be correct."
               echo "Attempting to fix migration history..."
+              
+              # Fix the specific migration history mismatch
+              fix_migration_history_mismatch "$SUPABASE_DB_URL"
               
               # Try to reset and push migrations with a more aggressive approach
               echo "Attempting to push with --include-all flag..."
@@ -197,6 +240,12 @@ jobs:
           # Get database connection string
           SUPABASE_DB_URL=$(supabase db remote get-connection-string)
           
+          # Check for the specific migration history mismatch we're seeing
+          if supabase migration list | grep -q "20250227.*20250227183244"; then
+            echo "Detected migration history mismatch. Fixing before proceeding..."
+            fix_migration_history_mismatch "$SUPABASE_DB_URL"
+          fi
+          
           # Try to push migrations, but handle errors gracefully
           if ! supabase db push; then
             echo "Migration push failed. Attempting recovery..."
@@ -205,6 +254,9 @@ jobs:
             if check_column_exists "api" "sponsors" "website" "$SUPABASE_DB_URL"; then
               echo "Website column exists in the sponsors table. Schema appears to be correct."
               echo "Attempting to fix migration history..."
+              
+              # Fix the specific migration history mismatch
+              fix_migration_history_mismatch "$SUPABASE_DB_URL"
               
               # Try to reset and push migrations with a more aggressive approach
               echo "Attempting to push with --include-all flag..."
