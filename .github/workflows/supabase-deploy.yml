@@ -10,6 +10,16 @@ on:
   pull_request:
     paths:
       - 'supabase/migrations/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - production
 
 jobs:
   deploy:
@@ -57,7 +67,7 @@ jobs:
 
       # For feature branch pushes, deploy to preview
       - name: Deploy Migrations (Preview)
-        if: github.event_name == 'push' && github.ref != 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref != 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'preview')
         run: |
           echo "Deploying migrations to preview environment..."
           supabase link --project-ref "${{ env.SUPABASE_PROJECT_ID }}" -p "${{ env.SUPABASE_DB_PASSWORD }}"
@@ -95,7 +105,7 @@ jobs:
 
       # For main branch pushes, deploy to production
       - name: Deploy Migrations (Production)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
         run: |
           echo "Deploying migrations to production environment..."
           supabase link --project-ref "${{ env.SUPABASE_PROJECT_ID }}" -p "${{ env.SUPABASE_DB_PASSWORD }}"
