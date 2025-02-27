@@ -1,5 +1,5 @@
--- Migration: add_website_to_sponsors
--- Created at: 2025-02-27
+-- Migration: sponsor_website_field
+-- Created at: 2025-02-27 13:42:25
 
 -- Add website field to sponsors table
 ALTER TABLE api.sponsors ADD COLUMN IF NOT EXISTS website TEXT;
