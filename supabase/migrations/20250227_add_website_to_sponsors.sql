@@ -16,8 +16,3 @@ BEGIN
         ADD COLUMN website TEXT;
     END IF;
 END $$;
-
--- @UNDO
-
--- Remove website column from sponsors table
--- ALTER TABLE api.sponsors DROP COLUMN IF EXISTS website;

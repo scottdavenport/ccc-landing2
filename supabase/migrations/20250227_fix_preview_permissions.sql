@@ -35,8 +35,3 @@ BEGIN
     ALTER DEFAULT PRIVILEGES IN SCHEMA api
     GRANT ALL ON TABLES TO service_role;
 END $$;
-
--- @UNDO
--- Revoke permissions (only if needed)
--- REVOKE USAGE ON SCHEMA api FROM anon;
--- REVOKE SELECT ON ALL TABLES IN SCHEMA api FROM anon;

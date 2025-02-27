@@ -16,6 +16,7 @@ type SponsorLightboxProps = {
     amount: number;
     cloudinary_public_id: string | null;
     year: number;
+    website?: string;
   } | null;
 };
 
@@ -110,6 +111,20 @@ export function SponsorLightbox({ isOpen, onClose, sponsor }: SponsorLightboxPro
                           Their generous contribution helps make our community events possible.
                         </p>
                       </div>
+                      
+                      {sponsor.website && (
+                        <div className="mb-6">
+                          <div className="text-sm font-medium text-gray-500 mb-1">Website</div>
+                          <a 
+                            href={sponsor.website} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-blue-600 hover:underline"
+                          >
+                            {sponsor.website.replace(/^https?:\/\//, '')}
+                          </a>
+                        </div>
+                      )}
                       
                       <div className="flex flex-col sm:flex-row gap-3 mt-auto">
                         <button

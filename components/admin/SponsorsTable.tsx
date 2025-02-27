@@ -157,6 +157,29 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
       },
     },
     {
+      field: 'website',
+      headerName: 'Website',
+      flex: 1,
+      minWidth: 180,
+      headerAlign: 'center',
+      align: 'left',
+      renderCell: (params) => {
+        const website = params.row.website;
+        if (!website) return 'N/A';
+        
+        return (
+          <a 
+            href={website} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-blue-600 hover:underline truncate max-w-full"
+          >
+            {website.replace(/^https?:\/\//, '')}
+          </a>
+        );
+      },
+    },
+    {
       field: 'year',
       headerName: 'Year',
       flex: 0.5,

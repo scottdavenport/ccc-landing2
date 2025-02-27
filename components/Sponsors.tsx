@@ -14,6 +14,7 @@ const sponsors = [
     cloudinary_public_id: '/sponsor-placeholder.svg',
     amount: 50000,
     year: 2025,
+    website: 'https://techcorp.example.com',
   },
   {
     name: 'Innovation Labs',
@@ -21,6 +22,7 @@ const sponsors = [
     cloudinary_public_id: '/sponsor-placeholder.svg',
     amount: 25000,
     year: 2025,
+    website: 'https://innovationlabs.example.com',
   },
   {
     name: 'Future Systems',
@@ -28,6 +30,7 @@ const sponsors = [
     cloudinary_public_id: '/sponsor-placeholder.svg',
     amount: 10000,
     year: 2025,
+    website: 'https://futuresystems.example.com',
   },
   {
     name: 'Digital Solutions',
@@ -35,6 +38,7 @@ const sponsors = [
     cloudinary_public_id: '/sponsor-placeholder.svg',
     amount: 5000,
     year: 2025,
+    website: 'https://digitalsolutions.example.com',
   },
 ];
 
