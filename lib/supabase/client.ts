@@ -9,8 +9,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-// Use api schema for all environments
-const schema = 'api';
+// Determine if we're in a preview environment
+const isPreview = process.env.NEXT_PUBLIC_VERCEL_ENV === 'preview';
+// Use public schema for preview environments to avoid permission issues
+const schema = isPreview ? 'public' : 'api';
+
+console.log(`Supabase client initialized with schema: ${schema}, URL: ${supabaseUrl}`);
 
 export const supabase = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
   db: {

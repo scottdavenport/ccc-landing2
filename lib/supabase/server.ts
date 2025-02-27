@@ -5,6 +5,13 @@ import { Database } from './database.types';
 
 export async function createClient() {
   const cookieStore = await cookies();
+  
+  // Determine if we're in a preview environment
+  const isPreview = process.env.NEXT_PUBLIC_VERCEL_ENV === 'preview';
+  // Use public schema for preview environments to avoid permission issues
+  const schema = isPreview ? 'public' : 'api';
+  
+  console.log(`Supabase server client initialized with schema: ${schema}`);
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,6 +19,9 @@ export async function createClient() {
     {
       auth: {
         persistSession: false, // Since this is server-side
+      },
+      db: {
+        schema,
       },
       cookies: {
         get(name: string) {
