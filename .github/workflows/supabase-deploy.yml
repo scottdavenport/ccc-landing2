@@ -76,30 +76,10 @@ jobs:
           echo "Current migration status:"
           supabase migration list
           
-          # First try to repair any known problematic migrations
-          echo "Proactively repairing known problematic migrations..."
-          supabase migration repair --status reverted 20250227 || true
-          
-          # Try pushing migrations with more aggressive approach
-          if ! supabase db push; then
-            echo "Initial push failed. Attempting more aggressive repair..."
-            
-            # Try with include-all flag
-            echo "Trying with --include-all flag..."
-            if ! supabase db push --include-all; then
-              echo "Still having issues. Trying one more approach..."
-              
-              # Get all migration files and sort them
-              MIGRATION_FILES=$(find supabase/migrations -name "*.sql" | sort)
-              
-              # Apply the repair migration directly
-              echo "Applying repair migration directly..."
-              PGPASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" psql "$(supabase db remote get-connection-string)" -f supabase/migrations/20250227184420_repair_migration_history.sql
-              
-              # Try pushing again
-              supabase db push
-            fi
-          fi
+          # Use our comprehensive migration fix script
+          echo "Using comprehensive migration fix script..."
+          chmod +x ./scripts/comprehensive-migration-fix.sh
+          SUPABASE_PROJECT_ID="${{ env.SUPABASE_PROJECT_ID }}" SUPABASE_DB_PASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" ./scripts/comprehensive-migration-fix.sh
           
           echo "Preview migrations deployed successfully."
 
@@ -114,19 +94,9 @@ jobs:
           echo "Current migration status:"
           supabase migration list
           
-          # Check for migration mismatch
-          if supabase db push 2>&1 | grep -q "Remote migration versions not found in local migrations directory"; then
-            echo "Detected migration history mismatch. Fixing before proceeding..."
-            
-            # Repair the migration history for the problematic migration
-            # This marks the migration as reverted in the history table
-            supabase migration repair --status reverted 20250227
-            
-            # Try pushing migrations again
-            supabase db push
-          else
-            # If no mismatch, just push the migrations
-            supabase db push
-          fi
+          # Use our comprehensive migration fix script for production as well
+          echo "Using comprehensive migration fix script..."
+          chmod +x ./scripts/comprehensive-migration-fix.sh
+          SUPABASE_PROJECT_ID="${{ env.SUPABASE_PROJECT_ID }}" SUPABASE_DB_PASSWORD="${{ env.SUPABASE_DB_PASSWORD }}" ./scripts/comprehensive-migration-fix.sh
           
           echo "Production migrations deployed successfully."
