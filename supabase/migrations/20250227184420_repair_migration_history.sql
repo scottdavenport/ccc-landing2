@@ -5,51 +5,13 @@
 -- the consolidated migration is properly recorded in the migration history table
 -- and removing any redundant migrations.
 
--- First, check if the consolidated migration is already in the history
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM supabase_migrations.schema_migrations 
-    WHERE version = '20250227183244'
-  ) THEN
-    -- Add the consolidated migration to the history
-    INSERT INTO supabase_migrations.schema_migrations (version, name, statements)
-    VALUES (
-      '20250227183244', 
-      'consolidated_sponsor_website_fix',
-      ARRAY['-- Consolidated fix migration that adds website column to sponsors table and fixes permissions']
-    );
-  END IF;
-  
-  -- Remove the redundant migration if it exists
-  -- This is the migration that our consolidated migration replaces
-  IF EXISTS (
-    SELECT 1 FROM supabase_migrations.schema_migrations 
-    WHERE version = '20250227'
-  ) THEN
-    DELETE FROM supabase_migrations.schema_migrations 
-    WHERE version = '20250227';
-  END IF;
-END $$;
+-- Note: We're removing the direct manipulation of the schema_migrations table
+-- as this should be handled by the Supabase CLI. Instead, we'll use the
+-- migration repair command to fix the migration history.
 
--- @UNDO
--- To undo this migration, you would need to restore the original migration history
--- DO $$
--- BEGIN
---   -- Remove the consolidated migration
---   DELETE FROM supabase_migrations.schema_migrations 
---   WHERE version = '20250227183244';
---   
---   -- Restore the original migration if needed
---   IF NOT EXISTS (
---     SELECT 1 FROM supabase_migrations.schema_migrations 
---     WHERE version = '20250227'
---   ) THEN
---     INSERT INTO supabase_migrations.schema_migrations (version, name, statements)
---     VALUES (
---       '20250227', 
---       '134225_sponsor_website_field',
---       ARRAY['-- Original website field migration']
---     );
---   END IF;
--- END $$;
+-- This migration file now serves as a marker for the repair process
+-- and doesn't contain any actual SQL statements that modify the schema_migrations table.
+
+-- The actual repair process should be run with:
+-- supabase migration repair --status applied 20250227183244
+-- supabase migration repair --status reverted 20250227
