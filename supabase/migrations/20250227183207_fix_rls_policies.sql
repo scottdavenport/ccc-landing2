@@ -5,6 +5,9 @@ DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON api.sponso
 DROP POLICY IF EXISTS "Enable update for authenticated users only" ON api.sponsors;
 DROP POLICY IF EXISTS "Enable delete for authenticated users only" ON api.sponsors;
 
+-- Ensure RLS is enabled on the sponsors table
+ALTER TABLE api.sponsors ENABLE ROW LEVEL SECURITY;
+
 -- Create new policies with proper permissions
 -- Allow anyone to read sponsors data
 CREATE POLICY "Enable read access for all users" ON api.sponsors
