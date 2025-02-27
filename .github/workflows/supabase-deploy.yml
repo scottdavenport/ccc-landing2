@@ -27,15 +27,26 @@ jobs:
         with:
           version: latest
 
+      # For pull requests, we'll just validate the migrations without applying them
+      - name: Validate Migrations (Pull Request)
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "Validating migrations for pull request..."
+          supabase link --project-ref "${{ env.SUPABASE_PROJECT_ID }}" -p "${{ env.SUPABASE_DB_PASSWORD }}"
+          # Use --dry-run to validate without applying
+          supabase db push --dry-run
+
+      # For feature branch pushes, deploy to preview
       - name: Deploy Migrations (Preview)
-        if: github.ref != 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref != 'refs/heads/main'
         run: |
           echo "Deploying migrations to preview environment..."
           supabase link --project-ref "${{ env.SUPABASE_PROJECT_ID }}" -p "${{ env.SUPABASE_DB_PASSWORD }}"
           supabase db push
 
+      # For main branch, deploy to production
       - name: Deploy Migrations (Production)
-        if: github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           echo "Deploying migrations to production environment..."
           supabase link --project-ref "${{ env.SUPABASE_PROJECT_ID }}" -p "${{ env.SUPABASE_DB_PASSWORD }}"
