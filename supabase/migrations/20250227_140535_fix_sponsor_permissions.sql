@@ -37,5 +37,4 @@ ON api.sponsors
 FOR DELETE 
 USING (auth.role() = 'authenticated');
 
--- @UNDO
--- No specific undo needed as policies are recreated with the same names
+-- No @UNDO section needed as this migration is idempotent
