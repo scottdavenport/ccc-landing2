@@ -6,10 +6,14 @@ const path = require('path');
 const dotenv = require('dotenv');
 const { Pool } = require('pg');
 
-// Database URLs for different environments
+// Load environment variables
+dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env.development.local' });
+
+// Database URLs should come from environment variables
 const DB_URLS = {
-  main: 'postgresql://***REMOVED***@ep-mute-tooth-a4mrn29b-pooler.us-east-1.aws.neon.tech/ccc-landing?sslmode=require',
-  development: 'postgresql://***REMOVED***@ep-hidden-paper-a4a7tmcd-pooler.us-east-1.aws.neon.tech/ccc-landing?sslmode=require'
+  main: process.env.MAIN_DATABASE_URL || process.env.DATABASE_URL,
+  development: process.env.DEVELOPMENT_DATABASE_URL || process.env.DATABASE_URL
 };
 
 // Get current branch name
@@ -90,7 +94,7 @@ function updateEnvFiles(databaseUrl) {
       
       // Replace or add DATABASE_URL
       if (content.includes('DATABASE_URL=')) {
-        content = content.replace(/***REMOVED***(\r?\n|$)/g, `DATABASE_URL="${databaseUrl}"$1`);
+        content = content.replace(/DATABASE_URL=.*(\r?\n|$)/g, `DATABASE_URL="${databaseUrl}"$1`);
       } else {
         content += `\nDATABASE_URL="${databaseUrl}"\n`;
       }
