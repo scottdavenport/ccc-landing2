@@ -24,14 +24,17 @@ yarn-error.log*
 
 # local env files
 # Environment files
+.env
+.env.*
 .env*.local
 .env.test
+.env.development.local
+.env.production.local
+.env.preview.local
 
 # Keep these in version control
 !.env.example
-!.env.development
-!.env.preview
-!.env.production
+!.env.local.example
 
 # vercel
 .vercel
