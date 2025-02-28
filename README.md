@@ -1,4 +1,4 @@
-# CCC Landing Page
+# Craven Cancer Classic Landing Page
 
 This is the landing page for the Coastal Carolina Classic golf tournament.
 
