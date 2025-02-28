@@ -22,16 +22,25 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-# Environment files
+# Environment files - exclude all by default
+.env
+.env.*
 .env*.local
+.env.development
+.env.production
+.env.preview
 .env.test
+.env.development.local
+.env.production.local
+.env.preview.local
 
-# Keep these in version control
+# Keep only example files in version control
 !.env.example
-!.env.development
-!.env.preview
-!.env.production
+!.env.*.example
+!.env.local.example
+!.env.development.example
+!.env.production.example
+!.env.preview.example
 
 # vercel
 .vercel
@@ -43,3 +52,11 @@ next-env.d.ts
 # IDE
 .vscode/
 .idea/
+
+# Logs
+logs
+*.log
+
+# Backup files
+*.bak
+*~

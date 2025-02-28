@@ -14,18 +14,18 @@ export async function GET() {
     const result = await cloudinary.api.ping();
     
     return NextResponse.json({ 
-      status: result.status === 'ok' ? 'connected' : 'error',
+      connected: result.status === 'ok',
       cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
     });
   } catch (error) {
     console.error('Cloudinary connection check error:', error);
     return NextResponse.json(
       { 
-        status: 'error', 
+        connected: false, 
         error: error instanceof Error ? error.message : 'Unknown error',
         cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
       },
       { status: 500 }
     );
   }
-}
+} 

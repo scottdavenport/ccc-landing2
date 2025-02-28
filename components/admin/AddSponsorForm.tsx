@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
 import { SponsorWithLevel } from '@/types/sponsors';
 
 type SponsorLevel = {
@@ -42,26 +41,43 @@ export function AddSponsorForm({ onSponsorAdded, sponsorToEdit }: AddSponsorForm
     const timer = setTimeout(async () => {
       if (!isMounted) return;
 
-      const { data, error } = await supabase.from('sponsor_levels').select('*');
+      try {
+        const response = await fetch('/api/sponsor-levels');
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch sponsor levels');
+        }
+        
+        const data = await response.json();
 
-      if (!isMounted) return;
+        if (!isMounted) return;
 
-      if (error) {
+        if (!data || data.length === 0) {
+          setError('No sponsor levels found. Please create sponsor levels first.');
+          return;
+        }
+
+        // Transform the data to match the SponsorLevel type
+        const transformedLevels: SponsorLevel[] = data.map((level: {
+          id: string;
+          name: string;
+          amount: number;
+        }) => ({
+          id: level.id,
+          name: level.name,
+          amount: level.amount
+        }));
+
+        setLevels(transformedLevels);
+        
+        // If not in edit mode, set default level
+        if (!sponsorToEdit) {
+          setSelectedLevel(transformedLevels[0].id);
+        }
+      } catch (error) {
         console.error('Error fetching sponsor levels:', error);
-        setError(`Error loading sponsor levels: ${error.message}`);
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        setError('No sponsor levels found. Please create sponsor levels first.');
-        return;
-      }
-
-      setLevels(data);
-      
-      // If not in edit mode, set default level
-      if (!sponsorToEdit) {
-        setSelectedLevel(data[0].id);
+        setError(`Error loading sponsor levels: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }, 500);
 
@@ -169,51 +185,55 @@ export function AddSponsorForm({ onSponsorAdded, sponsorToEdit }: AddSponsorForm
       }
 
       if (isEditMode && sponsorToEdit) {
-        // Update existing sponsor
-        const { error: sponsorError } = await supabase
-          .from('sponsors')
-          .update({
+        // Update existing sponsor via API
+        const response = await fetch('/api/sponsors', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: sponsorToEdit.id,
             name,
             level: selectedLevel,
             year: selectedYear,
             ...(cloudinaryData && {
               cloudinary_public_id: cloudinaryData.public_id,
-              image_url: cloudinaryData.secure_url,
-            }),
-          })
-          .eq('id', sponsorToEdit.id)
-          .select()
-          .single();
+              image_url: cloudinaryData.secure_url
+            })
+          }),
+        });
 
-        if (sponsorError) {
-          // Rollback: Delete from Cloudinary if Supabase update fails
+        if (!response.ok) {
+          // Rollback: Delete from Cloudinary if API update fails
           if (cloudinaryData) {
             await deleteFromCloudinary(cloudinaryData.public_id);
           }
-          throw sponsorError;
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to update sponsor');
         }
       } else {
-        // Insert new sponsor
-        const { error: sponsorError } = await supabase
-          .from('sponsors')
-          .insert([
-            {
-              name,
-              level: selectedLevel,
-              year: selectedYear,
-              cloudinary_public_id: cloudinaryData?.public_id,
-              image_url: cloudinaryData?.secure_url,
-            },
-          ])
-          .select()
-          .single();
+        // Insert new sponsor via API
+        const response = await fetch('/api/sponsors', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name,
+            level: selectedLevel,
+            year: selectedYear,
+            cloudinary_public_id: cloudinaryData?.public_id || null,
+            image_url: cloudinaryData?.secure_url || null
+          }),
+        });
 
-        if (sponsorError) {
-          // Rollback: Delete from Cloudinary if Supabase insert fails
+        if (!response.ok) {
+          // Rollback: Delete from Cloudinary if API insert fails
           if (cloudinaryData) {
             await deleteFromCloudinary(cloudinaryData.public_id);
           }
-          throw sponsorError;
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to create sponsor');
         }
       }
 

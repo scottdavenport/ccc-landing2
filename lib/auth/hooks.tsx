@@ -2,20 +2,7 @@
 
 import { useClerk, useAuth as useClerkAuth, useSignIn } from '@clerk/nextjs';
 
-type User = {
-  id: string | null;
-  // Add other user properties as needed
-};
-
-// Using a more generic type to avoid conflicts with Clerk's internal types
-type AuthHookReturn = {
-  user: User | null;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<unknown>;
-  signOut: () => Promise<void>;
-};
-
-export const useAuth = (): AuthHookReturn => {
+export function useAuth() {
   const { isLoaded, userId, isSignedIn } = useClerkAuth();
   const clerk = useClerk();
   const { isLoaded: isSignInLoaded, signIn } = useSignIn();
@@ -59,4 +46,4 @@ export const useAuth = (): AuthHookReturn => {
     signIn: login,
     signOut: logout,
   };
-};
+} 

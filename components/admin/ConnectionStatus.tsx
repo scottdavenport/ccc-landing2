@@ -2,20 +2,39 @@
 
 import { useEffect, useState } from 'react';
 
-import { supabase } from '@/lib/supabase/client';
+type ConnectionType = 'neon' | 'cloudinary';
+type ConnectionState = 'connected' | 'disconnected' | 'checking';
 
-export function ConnectionStatus() {
-  const [status, setStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
+interface ConnectionStatusProps {
+  type: ConnectionType;
+}
+
+export function ConnectionStatus({ type }: ConnectionStatusProps) {
+  const [status, setStatus] = useState<ConnectionState>('checking');
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
 
   useEffect(() => {
     const checkConnection = async () => {
       try {
-        const { error } = await supabase.from('sponsors').select('count');
-        if (error) throw error;
-        setStatus('connected');
+        let isConnected = false;
+        
+        if (type === 'neon') {
+          const response = await fetch('/api/db/connection');
+          if (response.ok) {
+            const data = await response.json();
+            isConnected = data.connected;
+          }
+        } else if (type === 'cloudinary') {
+          const response = await fetch('/api/cloudinary/connection');
+          if (response.ok) {
+            const data = await response.json();
+            isConnected = data.connected;
+          }
+        }
+        
+        setStatus(isConnected ? 'connected' : 'disconnected');
       } catch (error) {
-        console.error('Supabase connection error:', error);
+        console.error(`${type} connection error:`, error);
         setStatus('disconnected');
       }
       setLastChecked(new Date());
@@ -28,7 +47,7 @@ export function ConnectionStatus() {
     const interval = setInterval(checkConnection, 30000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [type]);
 
   const getStatusColor = () => {
     switch (status) {
@@ -41,6 +60,10 @@ export function ConnectionStatus() {
     }
   };
 
+  const getServiceName = () => {
+    return type === 'neon' ? 'Neon DB' : 'Cloudinary';
+  };
+
   return (
     <div
       className={`inline-flex items-center px-3 py-1 rounded-full border ${getStatusColor()} text-sm font-medium`}
@@ -50,10 +73,10 @@ export function ConnectionStatus() {
         className={`w-2 h-2 rounded-full mr-2 ${status === 'connected' ? 'bg-green-500' : status === 'disconnected' ? 'bg-red-500' : 'bg-gray-500'}`}
       />
       {status === 'connected'
-        ? 'Connected to Supabase'
+        ? `Connected to ${getServiceName()}`
         : status === 'disconnected'
-          ? 'Disconnected'
-          : 'Checking connection...'}
+          ? `${getServiceName()} Disconnected`
+          : `Checking ${getServiceName()} connection...`}
     </div>
   );
 }

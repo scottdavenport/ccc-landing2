@@ -2,21 +2,24 @@ import './globals.css';
 import '@/styles/embla-carousel.css';
 
 import { Inter } from 'next/font/google';
-
-import { Providers } from '@/components/providers/Providers';
+import { ClerkProvider } from '@clerk/nextjs';
+import { Providers } from '@/app/providers';
+import type { Metadata } from 'next';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export const metadata = {
-  title: 'Craven Cancer Classic',
-  description: 'Charity Golf Tournament',
+export const metadata: Metadata = {
+  title: 'Coastal Carolina Classic',
+  description: 'Coastal Carolina Classic Golf Tournament',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <Providers>{children}</Providers>
+        <ClerkProvider>
+          <Providers>{children}</Providers>
+        </ClerkProvider>
       </body>
     </html>
   );

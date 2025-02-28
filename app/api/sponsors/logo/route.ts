@@ -1,62 +1,63 @@
 import { NextResponse } from 'next/server';
-import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
+import { v2 as cloudinary } from 'cloudinary';
 
 // Configure Cloudinary
 cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true,
 });
 
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
-    const file = formData.get('logo') as File;
+    const logoFile = formData.get('logo') as File;
     const oldPublicId = formData.get('oldPublicId') as string;
 
-    if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    if (!logoFile) {
+      return NextResponse.json({ error: 'No logo file provided' }, { status: 400 });
     }
 
-    // If there's an old image, delete it first
+    // Convert file to buffer
+    const bytes = await logoFile.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    // Base64 encode the buffer
+    const base64Data = buffer.toString('base64');
+    const dataURI = `data:${logoFile.type};base64,${base64Data}`;
+
+    // Delete old image if it exists
     if (oldPublicId) {
       try {
         await cloudinary.uploader.destroy(oldPublicId);
-      } catch (deleteError) {
-        console.error('Error deleting old image:', deleteError);
+      } catch (error) {
+        console.error('Error deleting old image from Cloudinary:', error);
         // Continue with upload even if delete fails
       }
     }
 
-    // Convert File to buffer
-    const buffer = Buffer.from(await file.arrayBuffer());
-
     // Upload to Cloudinary
-    const result = await new Promise<UploadApiResponse>((resolve, reject) => {
-      cloudinary.uploader
-        .upload_stream(
-          {
-            folder: 'sponsors',
-            allowed_formats: ['jpg', 'jpeg', 'png', 'gif'],
-            transformation: [{ width: 800, height: 800, crop: 'limit' }, { quality: 'auto:good' }],
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else if (result) resolve(result);
-            else reject(new Error('No result from Cloudinary upload'));
-          }
-        )
-        .end(buffer);
+    const uploadResult = await cloudinary.uploader.upload(dataURI, {
+      folder: 'sponsors',
+      resource_type: 'image',
+      format: 'webp',
+      transformation: [
+        { width: 500, height: 500, crop: 'limit' },
+        { quality: 'auto:good' },
+      ],
     });
 
-    // Return the Cloudinary URL
     return NextResponse.json({
-      image_url: result.secure_url,
-      cloudinary_public_id: result.public_id,
+      image_url: uploadResult.secure_url,
+      cloudinary_public_id: uploadResult.public_id,
     });
   } catch (error) {
-    console.error('Error uploading to Cloudinary:', error);
-    return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });
+    console.error('Error uploading logo:', error);
+    return NextResponse.json(
+      { error: 'Failed to upload logo', message: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
   }
 }
 
