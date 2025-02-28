@@ -24,9 +24,13 @@ Create these files with the following variables:
 # Neon Database
 DATABASE_URL="postgresql://username:password@hostname/database?sslmode=require"
 
-# NextAuth.js
-NEXTAUTH_SECRET="your-secret-here"
-NEXTAUTH_URL="http://localhost:3000"
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="your-publishable-key"
+CLERK_SECRET_KEY="your-secret-key"
+NEXT_PUBLIC_CLERK_SIGN_IN_URL="/admin/login"
+NEXT_PUBLIC_CLERK_SIGN_UP_URL="/admin/login"
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL="/admin"
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL="/admin"
 
 # Admin credentials (for development only)
 ADMIN_EMAIL="admin@example.com"

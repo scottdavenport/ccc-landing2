@@ -3,9 +3,9 @@
 
 // Helper function to get the base URL
 function getBaseUrl() {
-  // For server-side requests, use the NEXTAUTH_URL environment variable
+  // For server-side requests, use a default URL
   if (typeof window === 'undefined') {
-    return process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
   }
   // For client-side requests, use the current origin
   return window.location.origin;
