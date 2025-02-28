@@ -3,8 +3,8 @@
 import { ReactNode } from 'react';
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import { ClerkProvider } from '@clerk/nextjs';
 
-import { AuthProvider } from '@/lib/auth';
 import { theme } from '@/lib/mui-theme';
 
 interface ProvidersProps {
@@ -13,7 +13,7 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <AuthProvider>
+    <ClerkProvider>
       <NextThemesProvider
         attribute="class"
         defaultTheme="light"
@@ -23,6 +23,6 @@ export function Providers({ children }: ProvidersProps) {
       >
         <MuiThemeProvider theme={theme}>{children}</MuiThemeProvider>
       </NextThemesProvider>
-    </AuthProvider>
+    </ClerkProvider>
   );
 }

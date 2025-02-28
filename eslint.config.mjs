@@ -14,7 +14,7 @@ const eslintConfig = [
   {
     files: ['**/*.ts', '**/*.tsx'],
     rules: {
-      // Allow unused variables in Supabase destructuring pattern
+      // Allow unused variables in destructuring patterns
       '@typescript-eslint/no-unused-vars': [
         'error',
         {

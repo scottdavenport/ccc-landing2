@@ -1,64 +1,39 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// This example protects all routes including api/trpc routes
+// Please edit this to allow other routes to be public as needed.
+// See https://clerk.com/docs/references/nextjs/clerk-middleware for more information about configuring your middleware
+const publicRoutes = createRouteMatcher([
+  "/",
+  "/api/db/connection",
+  "/api/db/query",
+  "/api/cloudinary/connection",
+  "/api/sponsors",
+  "/sponsors",
+  "/about",
+  "/contact",
+  "/api/webhooks(.*)",
+  "/admin/login(.*)",
+]);
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing Supabase environment variables');
+const ignoredRoutes = createRouteMatcher([
+  "/api/webhooks(.*)",
+]);
+
+export default clerkMiddleware(async (auth, req) => {
+  if (publicRoutes(req) || ignoredRoutes(req)) {
+    return; // Allow access to public and ignored routes
   }
-
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      get(name: string) {
-        return req.cookies.get(name)?.value;
-      },
-      set(name: string, value: string, options: any) {
-        res.cookies.set({
-          name,
-          value,
-          ...options,
-        });
-      },
-      remove(name: string, options: any) {
-        res.cookies.set({
-          name,
-          value: '',
-          ...options,
-        });
-      },
-    },
-  });
-
-  // Refresh session if expired - required for Server Components
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  // If the user is not signed in and the current path starts with /admin
-  // redirect to /admin/login
-  if (
-    !session &&
-    req.nextUrl.pathname.startsWith('/admin') &&
-    !req.nextUrl.pathname.startsWith('/admin/login')
-  ) {
-    const redirectUrl = new URL('/admin/login', req.url);
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  // If the user is signed in and trying to access /admin/login
-  // redirect to /admin
-  if (session && req.nextUrl.pathname === '/admin/login') {
-    const redirectUrl = new URL('/admin', req.url);
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  return res;
-}
+  
+  // Protect all other routes
+  await auth.protect();
+});
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: [
+    // Skip Next.js internals and all static files, unless found in search params
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
+  ],
 };

@@ -1,88 +1,229 @@
 # CCC Landing Page
 
-A modern, responsive landing page built with Next.js 14, TypeScript, and Tailwind CSS. Features a dynamic sponsor carousel, smooth animations, and a clean, professional design.
+This is the landing page for the Coastal Carolina Classic golf tournament.
 
-## Project Status
-
-### Recent Updates
-
-- ✅ Integrated Supabase for database management
-- ✅ Implemented admin dashboard with real-time connection status
-- ✅ Added sponsor management system with CRUD operations
-- ✅ Added comprehensive documentation
-- ✅ Implemented code formatting with Prettier
-- ✅ Set up local Supabase development environment with migration workflows
-
-### Coming Soon
-
-- Dynamic sponsor carousel integration
-- Authentication and authorization system
-- Event management features
-
-## Tech Stack
-
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
-- **Backend**: Supabase (with local development support)
-- **Database**: PostgreSQL (via Supabase)
-- **Deployment**: Vercel
-
-This project uses Next.js and was bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
-## Local Development
+## Development
 
 ### Prerequisites
 
-- Docker Desktop
-- Supabase CLI (`brew install supabase/tap/supabase`)
-- Node.js and npm/yarn
+- Node.js 18+ and npm
+- PostgreSQL database (or Neon serverless Postgres)
+- Cloudinary account for image storage
 
-### Setting Up Local Environment
+### Environment Variables
 
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Start local Supabase: `supabase start`
-4. Copy `.env.example` to `.env.local` and update with local Supabase credentials
-5. Run the development server: `npm run dev`
+The application uses different environment files for different environments:
 
-For detailed instructions on database migrations and local Supabase development, see [Local Supabase Development Guide](docs/local-supabase-dev.md)
+- `.env.local` - Base environment variables
+- `.env.development.local` - Development-specific variables (overrides `.env.local`)
+- `.env.production.local` - Production-specific variables (used in production)
 
-## Development Setup
+Create these files with the following variables:
 
-1. Clone the repository
-2. Copy `.env.example` to `.env.local` and fill in your Supabase credentials
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-4. Run the development server:
+```
+# Neon Database
+DATABASE_URL="postgresql://username:password@hostname/database?sslmode=require"
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# NextAuth.js
+NEXTAUTH_SECRET="your-secret-here"
+NEXTAUTH_URL="http://localhost:3000"
+
+# Admin credentials (for development only)
+ADMIN_EMAIL="admin@example.com"
+ADMIN_PASSWORD="admin123"
+
+# Cloudinary Configuration
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="your-cloud-name"
+CLOUDINARY_API_KEY="your-api-key"
+CLOUDINARY_API_SECRET="your-api-secret"
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="sponsor_logos"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Install dependencies
+npm install
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Initialize all database environments at once
+npm run db:init:all
 
-## Learn More
+# Or initialize a specific database environment
+DATABASE_URL="your-development-db-url" npm run deploy:setup
 
-To learn more about Next.js, take a look at the following resources:
+# Start the development server
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Vercel Deployment
 
-## Deploy on Vercel
+1. Push your code to a GitHub repository
+2. Connect the repository to Vercel
+3. Set up the environment variables in Vercel
+4. Deploy the application
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Database Setup for Production
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+After deploying to Vercel, you need to initialize the database:
+
+1. Set up the environment variables in Vercel
+2. Run the database setup script:
+
+```bash
+# Option 1: Run locally with production DATABASE_URL
+DATABASE_URL="your-production-db-url" npm run deploy:setup
+
+# Option 2: Use Vercel CLI to run in production environment
+vercel env pull .env.production.local
+npm run deploy:setup
+```
+
+### Multiple Database Environments
+
+This project supports multiple database environments:
+
+1. **Development Database**: Used when running `npm run dev`
+   - Configure in `.env.development.local`
+   - Initialize with `DATABASE_URL="your-dev-db-url" npm run deploy:setup`
+
+2. **Production Database**: Used when running `npm run build` and `npm run start`
+   - Configure in `.env.production.local`
+   - Initialize with `DATABASE_URL="your-prod-db-url" npm run deploy:setup`
+
+3. **Test Database**: Used for testing
+   - Configure in `.env.test.local`
+   - Initialize with `DATABASE_URL="your-test-db-url" npm run deploy:setup`
+
+You can initialize all database environments at once with:
+
+```bash
+npm run db:init:all
+```
+
+This script will read the DATABASE_URL from each environment file and initialize the corresponding database.
+
+## Database Schema
+
+The application uses two main tables:
+
+1. `api.sponsor_levels` - Stores the different sponsorship levels
+2. `api.sponsors` - Stores the sponsors information
+
+The schema is defined in `lib/neon/schema.sql` and is automatically applied when running the `deploy:setup` script.
+
+## Data Import
+
+Sample data is stored in CSV files in the `migrations/data` directory:
+
+- `sponsor_levels.csv` - Contains the sponsorship levels
+- `sponsors.csv` - Contains the sponsors information
+
+The data is automatically imported when running the `deploy:setup` script.
+
+## Features
+
+- Responsive landing page
+- Admin dashboard for managing sponsors
+- Authentication for admin users
+- Image upload to Cloudinary
+- Database integration with Neon Postgres
+
+## Database Management
+
+### Neon Database Environments
+
+This project uses Neon for database hosting with two separate environments:
+
+1. **Main Environment** - Used for production
+   - Database URL: `ep-mute-tooth-a4mrn29b-pooler.us-east-1.aws.neon.tech`
+   - Associated with the `main` branch
+
+2. **Development Environment** - Used for development and feature branches
+   - Database URL: `ep-hidden-paper-a4a7tmcd-pooler.us-east-1.aws.neon.tech`
+   - Associated with the `development` branch and all feature branches
+
+### Database Management Scripts
+
+We've added several scripts to help manage the Neon database environments:
+
+```bash
+# Test connection to the database for the current branch
+npm run db:test
+
+# Initialize the database with schema and data
+npm run db:init
+
+# Update environment files with the correct DATABASE_URL
+npm run db:update-env
+
+# Switch to the main branch database
+npm run db:switch:main
+
+# Switch to the development branch database
+npm run db:switch:dev
+```
+
+### Workflow for Branch-Based Database Management
+
+1. When switching Git branches, use the corresponding database switch command:
+   ```bash
+   # If switching to main branch
+   git checkout main
+   npm run db:switch:main
+
+   # If switching to development or a feature branch
+   git checkout development
+   npm run db:switch:dev
+   ```
+
+2. After switching, you can test the connection:
+   ```bash
+   npm run db:test
+   ```
+
+3. If needed, initialize the database with schema and data:
+   ```bash
+   npm run db:init
+   ```
+
+## Authentication
+
+### Clerk Authentication
+
+The application uses [Clerk](https://clerk.com/) for authentication. Clerk is a complete authentication and user management solution that provides:
+
+- Email/password authentication
+- Social login (Google, GitHub, etc.)
+- Multi-factor authentication
+- User management
+- Session management
+
+To set up Clerk:
+
+1. Create a Clerk account at [clerk.com](https://clerk.com/)
+2. Create a new application in the Clerk dashboard
+3. Add the following environment variables to your `.env.local` file:
+
+```
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+CLERK_SECRET_KEY=your_clerk_secret_key
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/admin/login
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/admin/login
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/admin
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/admin
+```
+
+4. Configure your application in the Clerk dashboard:
+   - Set up the authentication methods you want to use
+   - Customize the appearance of the authentication UI
+   - Configure email templates
+
+### Admin Access
+
+To restrict access to the admin dashboard:
+
+1. Create a user in the Clerk dashboard
+2. Assign the user the appropriate role/permissions
+3. The middleware is configured to protect all routes under `/admin` except for `/admin/login`

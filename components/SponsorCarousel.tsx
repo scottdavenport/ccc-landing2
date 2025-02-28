@@ -10,8 +10,8 @@ import { cn } from '@/lib/utils';
 import { SponsorLightbox } from './SponsorLightbox';
 import { DotButton, useDotButton } from './EmblaCarouselDotButton';
 
-import { supabase } from '@/lib/supabase/client';
 import { CldImage } from 'next-cloudinary';
+import { SponsorWithLevel } from '@/types/sponsors';
 
 import '@/styles/embla-carousel.css';
 
@@ -124,23 +124,13 @@ export default function SponsorCarousel() {
     async function fetchSponsors() {
       try {
         console.log('Fetching sponsors...');
-        const { data, error } = await supabase
-          .schema('api')
-          .from('sponsors')
-          .select(`
-            *,
-            sponsor_levels (
-              name,
-              amount
-            )
-          `)
-          .order('year', { ascending: false });
-
-        if (error) {
-          console.error('Supabase error:', error.message);
-          console.error('Error details:', error);
-          return;
+        
+        const response = await fetch('/api/sponsors');
+        if (!response.ok) {
+          throw new Error(`Error fetching sponsors: ${response.status}`);
         }
+        
+        const data = await response.json();
 
         if (!data || data.length === 0) {
           console.log('No sponsors found');
@@ -150,10 +140,10 @@ export default function SponsorCarousel() {
         console.log('Fetched sponsors:', data);
 
         // Transform the data to match the component's needs
-        const transformedSponsors = data.map(sponsor => ({
+        const transformedSponsors = data.map((sponsor: SponsorWithLevel) => ({
           name: sponsor.name,
-          level: sponsor.sponsor_levels.name,
-          amount: sponsor.sponsor_levels.amount,
+          level: sponsor.level_name || sponsor.level,
+          amount: sponsor.level_amount || (sponsor.sponsor_levels?.amount || 0),
           cloudinary_public_id: sponsor.cloudinary_public_id || null,
           year: sponsor.year
         }));

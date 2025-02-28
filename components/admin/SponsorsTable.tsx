@@ -3,7 +3,7 @@
  *
  * This component displays a table of sponsors with their logos, names, levels, and other details.
  * It provides functionality to view, upload, and delete sponsor logos using Cloudinary for storage
- * and Supabase for data management.
+ * and Neon for data management.
  */
 
 'use client';
@@ -24,9 +24,30 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/supabase/client';
 import { SponsorLogoDialog } from './SponsorLogoDialog';
 import { SponsorWithLevel } from '@/types/sponsors';
+
+// Helper function to delete images from Cloudinary
+const deleteFromCloudinary = async (publicId: string) => {
+  try {
+    const result = await fetch('/api/cloudinary/delete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ publicId }),
+    });
+    
+    if (!result.ok) {
+      throw new Error('Failed to delete image from Cloudinary');
+    }
+    
+    return await result.json();
+  } catch (error) {
+    console.error('Error deleting from Cloudinary:', error);
+    throw error;
+  }
+};
 
 function LoadingSpinner() {
   return (
@@ -54,23 +75,49 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
   const fetchSponsors = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('sponsors')
-        .select(`
-          *,
-          sponsor_levels (name, amount)
-        `)
-        .order('created_at', { ascending: false });
+      const response = await fetch('/api/sponsors');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch sponsors');
+      }
+      
+      const data = await response.json();
 
-      if (error) throw error;
-
-      if (!data) {
+      if (!data || data.length === 0) {
         setSponsors([]);
         return;
       }
 
-      console.log('Sponsors with levels:', data);
-      setSponsors(data);
+      // Transform the data to match the SponsorWithLevel type
+      const transformedSponsors = data.map((sponsor: {
+        id: string;
+        name: string;
+        level: string;
+        year: number;
+        image_url: string | null;
+        cloudinary_public_id: string | null;
+        created_at: string;
+        updated_at: string;
+        level_name: string;
+        amount: number;
+      }) => ({
+        id: sponsor.id,
+        name: sponsor.name,
+        level: sponsor.level,
+        year: sponsor.year,
+        image_url: sponsor.image_url,
+        cloudinary_public_id: sponsor.cloudinary_public_id,
+        created_at: sponsor.created_at,
+        updated_at: sponsor.updated_at,
+        sponsor_levels: {
+          name: sponsor.level_name,
+          amount: sponsor.amount
+        }
+      }));
+
+      console.log('Sponsors with levels:', transformedSponsors);
+      setSponsors(transformedSponsors);
     } catch (err) {
       console.error('Error fetching sponsors:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch sponsors');
@@ -98,39 +145,50 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
         formData.append('oldPublicId', oldPublicId);
       }
 
+      // Upload to Cloudinary via our API
       const uploadResponse = await fetch('/api/sponsors/logo', {
         method: 'POST',
         body: formData,
       });
 
       if (!uploadResponse.ok) {
-        throw new Error('Failed to upload logo');
+        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
       }
 
       const { image_url, cloudinary_public_id } = await uploadResponse.json();
 
-      const { error } = await supabase
-        .from('sponsors')
-        .update({
+      // Update the sponsor in the database
+      const updateResponse = await fetch('/api/sponsors', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: selectedSponsorId,
           image_url,
           cloudinary_public_id,
-        })
-        .eq('id', selectedSponsorId);
+        }),
+      });
 
-      if (error) throw error;
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json();
+        throw new Error(errorData.message || 'Failed to update sponsor');
+      }
 
-      setSponsors(prev =>
-        prev.map(sponsor =>
-          sponsor.id === selectedSponsorId
-            ? { ...sponsor, image_url, cloudinary_public_id }
-            : sponsor
+      // Update local state
+      setSponsors(
+        sponsors.map(s =>
+          s.id === selectedSponsorId
+            ? { ...s, image_url, cloudinary_public_id }
+            : s
         )
       );
+
+      // Close dialog
+      setSelectedSponsorId(null);
     } catch (err) {
       console.error('Error uploading logo:', err);
-      throw new Error('Failed to upload logo');
-    } finally {
-      setSelectedSponsorId(null);
+      setError(err instanceof Error ? err.message : 'Failed to upload logo');
     }
   };
 
@@ -271,20 +329,40 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
     );
   }
 
-  const handleDelete = async (ids: string[]) => {
+  const deleteSponsors = async (ids: string[]) => {
     if (ids.length === 0) return;
 
     try {
-      // Delete from Supabase
-      const { error } = await supabase.from('sponsors').delete().in('id', ids);
+      // Delete sponsors one by one
+      for (const id of ids) {
+        // Delete from database via API
+        const response = await fetch(`/api/sponsors?id=${id}`, {
+          method: 'DELETE',
+        });
 
-      if (error) throw error;
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to delete sponsor');
+        }
+
+        const data = await response.json();
+        
+        // If the sponsor had a Cloudinary image, delete it
+        if (data.cloudinary_public_id) {
+          try {
+            await deleteFromCloudinary(data.cloudinary_public_id);
+          } catch (err) {
+            console.error('Error deleting image from Cloudinary:', err);
+            // Continue even if Cloudinary delete fails
+          }
+        }
+      }
 
       // Update local state
       setSponsors(sponsors.filter(sponsor => !ids.includes(sponsor.id)));
       setSelectedRows([]);
-      setShowDeleteDialog(false);
       setSingleDeleteId(null);
+      setShowDeleteDialog(false);
     } catch (err) {
       console.error('Error deleting sponsors:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete sponsors');
@@ -371,7 +449,7 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => handleDelete(selectedRows as string[])}
+              onClick={() => deleteSponsors(selectedRows as string[])}
             >
               Delete
             </AlertDialogAction>
@@ -392,7 +470,7 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => singleDeleteId && handleDelete([singleDeleteId])}
+              onClick={() => singleDeleteId && deleteSponsors([singleDeleteId])}
             >
               Delete
             </AlertDialogAction>
