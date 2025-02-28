@@ -224,6 +224,8 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/admin
    - Customize the appearance of the authentication UI
    - Configure email templates
 
+For detailed setup instructions and troubleshooting, see [docs/clerk-setup.md](docs/clerk-setup.md).
+
 ### Admin Access
 
 To restrict access to the admin dashboard:
