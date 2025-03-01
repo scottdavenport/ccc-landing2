@@ -296,7 +296,7 @@ export function AddSponsorForm({ onSponsorAdded, sponsorToEdit }: AddSponsorForm
               >
                 {levels.map(level => (
                   <option key={level.id} value={level.id}>
-                    {level.name} (${level.amount.toLocaleString()})
+                    {level.name} (${level.amount ? level.amount.toLocaleString() : '0'})
                   </option>
                 ))}
               </select>

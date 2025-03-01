@@ -11,47 +11,77 @@ cloudinary.config({
 
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
-    const name = formData.get('name') as string;
-    const level = formData.get('level') as string;
-    const year = parseInt(formData.get('year') as string, 10);
-    const logo = formData.get('logo') as File;
+    // Check content type to determine how to handle the request
+    const contentType = request.headers.get('content-type') || '';
+    
+    let name: string;
+    let level: string;
+    let year: number;
+    let cloudinary_public_id: string | null = null;
+    let image_url: string | null = null;
+    
+    // Handle JSON request (from AddSponsorForm)
+    if (contentType.includes('application/json')) {
+      const { name: jsonName, level: jsonLevel, year: jsonYear, cloudinary_public_id: jsonPublicId, image_url: jsonImageUrl } = await request.json();
+      
+      name = jsonName;
+      level = jsonLevel;
+      year = jsonYear;
+      cloudinary_public_id = jsonPublicId || null;
+      image_url = jsonImageUrl || null;
+      
+      if (!name || !level || !year) {
+        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      }
+    } 
+    // Handle form data request (from file upload)
+    else if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      name = formData.get('name') as string;
+      level = formData.get('level') as string;
+      year = parseInt(formData.get('year') as string, 10);
+      const logo = formData.get('logo') as File;
 
-    if (!name || !level || isNaN(year) || !logo) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      if (!name || !level || isNaN(year) || !logo) {
+        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      }
+
+      // Convert the file to a buffer
+      const buffer = await logo.arrayBuffer();
+
+      // Upload to Cloudinary
+      const uploadPromise = new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'sponsors',
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+
+        // Convert buffer to Uint8Array and write to stream
+        const uint8Array = new Uint8Array(buffer);
+        uploadStream.end(uint8Array);
+      });
+
+      interface CloudinaryUploadResult {
+        secure_url: string;
+        public_id: string;
+      }
+
+      const uploadResult = (await uploadPromise) as CloudinaryUploadResult;
+      cloudinary_public_id = uploadResult.public_id;
+      image_url = uploadResult.secure_url;
+    } else {
+      return NextResponse.json({ error: 'Unsupported content type' }, { status: 400 });
     }
-
-    // Convert the file to a buffer
-    const buffer = await logo.arrayBuffer();
-
-    // Upload to Cloudinary
-    const uploadPromise = new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder: 'sponsors',
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-
-      // Convert buffer to Uint8Array and write to stream
-      const uint8Array = new Uint8Array(buffer);
-      uploadStream.end(uint8Array);
-    });
-
-    interface CloudinaryUploadResult {
-      secure_url: string;
-      public_id: string;
-    }
-
-    const uploadResult = (await uploadPromise) as CloudinaryUploadResult;
 
     // Save to Neon database
     const result = await sql`
       INSERT INTO api.sponsors (name, level, year, cloudinary_public_id, image_url)
-      VALUES (${name}, ${level}, ${year}, ${uploadResult.public_id}, ${uploadResult.secure_url})
+      VALUES (${name}, ${level}, ${year}, ${cloudinary_public_id}, ${image_url})
       RETURNING *
     `;
 
@@ -62,7 +92,7 @@ export async function POST(request: Request) {
     return NextResponse.json(result[0]);
   } catch (error) {
     console.error('Error creating sponsor:', error);
-    return NextResponse.json({ error: 'Failed to create sponsor' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create sponsor', message: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }
 
