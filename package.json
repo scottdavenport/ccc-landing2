@@ -14,7 +14,11 @@
     "db:update-env": "node scripts/neon-db-manager.js update-env",
     "db:switch:main": "node scripts/neon-db-manager.js switch main",
     "db:switch:dev": "node scripts/neon-db-manager.js switch development",
-    "db:create-admin": "node scripts/create-admin-user.js"
+    "db:create-admin": "node scripts/create-admin-user.js",
+    "db:check": "node scripts/check-db-schema.js",
+    "db:init:preview": "node scripts/init-preview-db.js",
+    "db:copy:prod-to-preview": "node scripts/copy-prod-to-preview.js",
+    "db:fix:preview": "node scripts/fix-preview-db.js"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.12.1",
