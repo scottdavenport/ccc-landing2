@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sql } from '@/lib/neon/server-client';
+import { sql } from '@/lib/neon/improved-server-client';
 
 export async function POST(request: Request) {
   try {

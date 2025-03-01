@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
-import { sql } from '@/lib/neon/client';
+import { sql } from '@/lib/neon/improved-server-client';
 
 // Configure Cloudinary
 cloudinary.config({

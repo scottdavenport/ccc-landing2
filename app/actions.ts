@@ -1,6 +1,6 @@
 "use server";
 
-import { sql, query } from "@/lib/neon/client";
+import { sql, query } from "@/lib/neon/improved-server-client";
 
 // Sponsors actions
 export async function fetchSponsors() {

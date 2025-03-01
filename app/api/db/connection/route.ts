@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { checkConnection } from '@/lib/neon/server-client';
+import { checkConnection } from '@/lib/neon/improved-server-client';
 
 export async function GET() {
   try {
