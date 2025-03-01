@@ -42,6 +42,7 @@ type TransformedSponsor = {
   level: string;
   amount: number;
   cloudinary_public_id: string | null;
+  website_url: string | null;
   year: number;
 };
 
@@ -145,6 +146,7 @@ export default function SponsorCarousel() {
           level: sponsor.level_name || sponsor.level,
           amount: sponsor.level_amount || (sponsor.sponsor_levels?.amount || 0),
           cloudinary_public_id: sponsor.cloudinary_public_id || null,
+          website_url: sponsor.website_url || null,
           year: sponsor.year
         }));
 

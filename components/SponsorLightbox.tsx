@@ -15,6 +15,7 @@ type SponsorLightboxProps = {
     level: string;
     amount: number;
     cloudinary_public_id: string | null;
+    website_url?: string | null;
     year: number;
   } | null;
 };
@@ -112,13 +113,24 @@ export function SponsorLightbox({ isOpen, onClose, sponsor }: SponsorLightboxPro
                       </div>
                       
                       <div className="flex flex-col sm:flex-row gap-3 mt-auto">
-                        <button
-                          type="button"
-                          className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                          onClick={onClose}
-                        >
-                          Visit Website
-                        </button>
+                        {sponsor.website_url ? (
+                          <a
+                            href={sponsor.website_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                          >
+                            Visit Website
+                          </a>
+                        ) : (
+                          <button
+                            type="button"
+                            className="inline-flex justify-center rounded-md border border-transparent bg-gray-400 px-4 py-2 text-sm font-medium text-white cursor-not-allowed"
+                            disabled
+                          >
+                            No Website Available
+                          </button>
+                        )}
                         <Dialog.Close className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
                           Close
                         </Dialog.Close>

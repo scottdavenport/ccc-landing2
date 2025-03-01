@@ -4,6 +4,7 @@ export type Sponsor = {
   name: string;
   level: string; // uuid reference to sponsor_levels
   year: number;
+  website_url?: string | null;
   cloudinary_public_id?: string;
   image_url?: string;
   created_at: string;

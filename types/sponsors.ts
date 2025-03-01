@@ -9,6 +9,7 @@ export type SponsorWithLevel = {
   created_at: string;
   cloudinary_public_id?: string;
   image_url?: string;
+  website_url?: string | null;
   isEditing?: boolean;
   level: string;
   level_name?: string;

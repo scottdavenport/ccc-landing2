@@ -18,16 +18,25 @@ export async function POST(request: Request) {
     let name: string;
     let level: string;
     let year: number;
+    let website_url: string | null = null;
     let cloudinary_public_id: string | null = null;
     let image_url: string | null = null;
     
     // Handle JSON request (from AddSponsorForm)
     if (contentType.includes('application/json')) {
-      const { name: jsonName, level: jsonLevel, year: jsonYear, cloudinary_public_id: jsonPublicId, image_url: jsonImageUrl } = await request.json();
+      const { 
+        name: jsonName, 
+        level: jsonLevel, 
+        year: jsonYear, 
+        website_url: jsonWebsiteUrl,
+        cloudinary_public_id: jsonPublicId, 
+        image_url: jsonImageUrl 
+      } = await request.json();
       
       name = jsonName;
       level = jsonLevel;
       year = jsonYear;
+      website_url = jsonWebsiteUrl || null;
       cloudinary_public_id = jsonPublicId || null;
       image_url = jsonImageUrl || null;
       
@@ -81,8 +90,8 @@ export async function POST(request: Request) {
 
     // Save to Neon database
     const result = await sql`
-      INSERT INTO api.sponsors (name, level, year, cloudinary_public_id, image_url)
-      VALUES (${name}, ${level}, ${year}, ${cloudinary_public_id}, ${image_url})
+      INSERT INTO api.sponsors (name, level, year, website_url, cloudinary_public_id, image_url)
+      VALUES (${name}, ${level}, ${year}, ${website_url}, ${cloudinary_public_id}, ${image_url})
       RETURNING *
     `;
 
@@ -206,7 +215,7 @@ export async function PATCH(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const { id, name, level, year, cloudinary_public_id, image_url } = await request.json();
+    const { id, name, level, year, website_url, cloudinary_public_id, image_url } = await request.json();
 
     // Validate required fields
     if (!id || !name || !level || !year) {
@@ -222,6 +231,7 @@ export async function PUT(request: Request) {
           name = ${name},
           level = ${level},
           year = ${year},
+          website_url = ${website_url},
           cloudinary_public_id = ${cloudinary_public_id},
           image_url = ${image_url}
         WHERE id = ${id}
@@ -233,7 +243,8 @@ export async function PUT(request: Request) {
         SET 
           name = ${name},
           level = ${level},
-          year = ${year}
+          year = ${year},
+          website_url = ${website_url}
         WHERE id = ${id}
         RETURNING *
       `;
