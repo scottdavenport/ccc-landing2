@@ -51,7 +51,6 @@ export default function SponsorCarousel() {
   const [loading, setLoading] = useState(true);
   const [emblaRef, emblaApi] = useEmblaCarousel(OPTIONS, [AutoPlay(AUTOPLAY_OPTIONS)]);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [parallaxValues, setParallaxValues] = useState<number[]>([]);
   const [selectedSponsor, setSelectedSponsor] = useState<TransformedSponsor | null>(null);
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
@@ -88,23 +87,6 @@ export default function SponsorCarousel() {
     const updateScrollState = () => {
       setCanScrollPrev(emblaApi.canScrollPrev());
       setCanScrollNext(emblaApi.canScrollNext());
-
-      // Update parallax values
-      try {
-        const scrollSnap = emblaApi.scrollSnapList();
-        const location = emblaApi.scrollProgress();
-
-        const styles = sponsors.map((_, index) => {
-          const slidePosition = scrollSnap[index] || 0;
-          const distance = Math.abs(location - slidePosition);
-          return Math.min(1, Math.max(0, 1 - distance * 2)) * 50;
-        });
-
-        setParallaxValues(styles);
-      } catch (error) {
-        console.error('Error calculating parallax:', error);
-        setParallaxValues(sponsors.map(() => 0));
-      }
     };
 
     emblaApi.on('select', onSelect);
