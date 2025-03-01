@@ -9,6 +9,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// This function handles both JSON and form data requests for creating sponsors
 export async function POST(request: Request) {
   try {
     // Check content type to determine how to handle the request
