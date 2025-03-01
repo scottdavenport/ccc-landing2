@@ -3,9 +3,20 @@ require('dotenv').config();
 const { Pool } = require('pg');
 
 // Define the production and preview database URLs
-// These can be overridden with environment variables
-const PROD_DB_URL = process.env.PROD_DATABASE_URL || 'postgresql://ccc-landing_owner:***REMOVED***@ep-mute-tooth-a4mrn29b-pooler.us-east-1.aws.neon.tech/ccc-landing?sslmode=require';
-const PREVIEW_DB_URL = process.env.PREVIEW_DATABASE_URL || 'postgresql://ccc-landing_owner:***REMOVED***@ep-hidden-paper-a4a7tmcd-pooler.us-east-1.aws.neon.tech/ccc-landing?sslmode=require';
+// These must be provided as environment variables
+const PROD_DB_URL = process.env.PROD_DATABASE_URL;
+const PREVIEW_DB_URL = process.env.PREVIEW_DATABASE_URL;
+
+// Check if environment variables are set
+if (!PROD_DB_URL) {
+  console.error('❌ PROD_DATABASE_URL environment variable is not set');
+  process.exit(1);
+}
+
+if (!PREVIEW_DB_URL) {
+  console.error('❌ PREVIEW_DATABASE_URL environment variable is not set');
+  process.exit(1);
+}
 
 // Function to get all data from a table
 async function getAllData(pool, schema, tableName) {
