@@ -9,6 +9,19 @@ const nextConfig = {
       },
     ],
   },
+  webpack: (config, { isServer }) => {
+    // Use the improved server client in production
+    if (process.env.NODE_ENV === 'production') {
+      // Add the ws polyfill for WebSocket support
+      if (!isServer) {
+        config.resolve.fallback = {
+          ...config.resolve.fallback,
+          ws: false,
+        };
+      }
+    }
+    return config;
+  },
 };
 
 // Log environment info during build

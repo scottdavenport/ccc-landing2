@@ -5,6 +5,10 @@
 function getBaseUrl() {
   // For server-side requests, use a default URL
   if (typeof window === 'undefined') {
+    // Use VERCEL_URL for Vercel deployments
+    if (process.env.VERCEL_URL) {
+      return `https://${process.env.VERCEL_URL}`;
+    }
     return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
   }
   // For client-side requests, use the current origin

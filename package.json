@@ -20,7 +20,8 @@
     "db:copy:prod-to-preview": "node scripts/copy-prod-to-preview.js",
     "db:fix:preview": "node scripts/fix-preview-db.js",
     "db:init:prod": "node scripts/init-prod-db.js",
-    "db:fix:prod": "node scripts/fix-prod-db.js"
+    "db:fix:prod": "node scripts/fix-prod-db.js",
+    "db:test:improved": "node scripts/test-improved-client.js"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.12.1",
@@ -58,7 +59,8 @@
     "styled-jsx": "^5.1.6",
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "ws": "^8.18.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -68,6 +70,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/ws": "^8.5.14",
     "autoprefixer": "^10.4.20",
     "dotenv": "^16.4.7",
     "esbuild-register": "^3.6.0",
@@ -77,6 +80,7 @@
     "prettier": "^3.5.2",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }
