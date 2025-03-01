@@ -18,7 +18,9 @@
     "db:check": "node scripts/check-db-schema.js",
     "db:init:preview": "node scripts/init-preview-db.js",
     "db:copy:prod-to-preview": "node scripts/copy-prod-to-preview.js",
-    "db:fix:preview": "node scripts/fix-preview-db.js"
+    "db:fix:preview": "node scripts/fix-preview-db.js",
+    "db:init:prod": "node scripts/init-prod-db.js",
+    "db:fix:prod": "node scripts/fix-prod-db.js"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.12.1",
