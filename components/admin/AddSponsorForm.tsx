@@ -70,6 +70,9 @@ export function AddSponsorForm({ onSponsorAdded, sponsorToEdit }: AddSponsorForm
           amount: level.amount
         }));
 
+        // Sort levels by amount from largest to smallest
+        transformedLevels.sort((a, b) => b.amount - a.amount);
+
         setLevels(transformedLevels);
         
         // If not in edit mode, set default level
