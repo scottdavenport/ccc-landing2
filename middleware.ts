@@ -14,6 +14,7 @@ const publicRoutes = createRouteMatcher([
   "/contact",
   "/api/webhooks(.*)",
   "/admin/login(.*)",
+  "/admin-login",
 ]);
 
 const ignoredRoutes = createRouteMatcher([
