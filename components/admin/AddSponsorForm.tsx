@@ -125,7 +125,7 @@ export function AddSponsorForm({ onSponsorAdded, sponsorToEdit }: AddSponsorForm
   ): Promise<{ public_id: string; secure_url: string }> => {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || '');
+    formData.append('upload_preset', 'sponsors');
 
     try {
       const response = await fetch(

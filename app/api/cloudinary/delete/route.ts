@@ -3,7 +3,7 @@ import { v2 as cloudinary } from 'cloudinary';
 
 // Configure Cloudinary
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
   secure: true,
@@ -17,8 +17,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No public ID provided' }, { status: 400 });
     }
 
+    console.log('Attempting to delete Cloudinary asset:', publicId);
+
     // Delete from Cloudinary
     const result = await cloudinary.uploader.destroy(publicId);
+
+    console.log('Cloudinary delete result:', result);
 
     if (result.result !== 'ok') {
       return NextResponse.json({ error: 'Failed to delete image from Cloudinary' }, { status: 500 });

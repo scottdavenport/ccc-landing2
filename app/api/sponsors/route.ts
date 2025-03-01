@@ -7,6 +7,7 @@ cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true
 });
 
 // This function handles both JSON and form data requests for creating sponsors
@@ -53,8 +54,8 @@ export async function POST(request: Request) {
       level = formData.get('level') as string || 'Champion';
       year = parseInt(formData.get('year') as string || new Date().getFullYear().toString(), 10);
       const logo = formData.get('logo') as File;
-      // Get the folder from form data, default to 'sponsors' if not provided
-      const folder = formData.get('folder') as string || 'sponsors';
+      // Get the upload preset from form data, default to 'sponsors' if not provided
+      const uploadPreset = formData.get('upload_preset') as string || 'sponsors';
 
       if (!name || !logo) {
         return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -65,13 +66,21 @@ export async function POST(request: Request) {
 
       // Upload to Cloudinary
       const uploadPromise = new Promise((resolve, reject) => {
+        console.log('Uploading to Cloudinary using preset:', uploadPreset);
+        
         const uploadStream = cloudinary.uploader.upload_stream(
           {
-            folder: folder,
+            upload_preset: uploadPreset,
+            resource_type: 'image'
           },
           (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
+            if (error) {
+              console.error('Cloudinary upload error:', error);
+              reject(error);
+            } else {
+              console.log('Cloudinary upload success:', result);
+              resolve(result);
+            }
           }
         );
 
@@ -86,8 +95,16 @@ export async function POST(request: Request) {
       }
 
       const uploadResult = (await uploadPromise) as CloudinaryUploadResult;
+      
+      // Store the public_id exactly as returned by Cloudinary
       cloudinary_public_id = uploadResult.public_id;
       image_url = uploadResult.secure_url;
+      
+      console.log('Cloudinary upload result:', {
+        public_id: cloudinary_public_id,
+        image_url,
+        full_response: uploadResult
+      });
     } else {
       return NextResponse.json({ error: 'Unsupported content type' }, { status: 400 });
     }
