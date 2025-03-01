@@ -95,6 +95,7 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
         name: string;
         level: string;
         year: number;
+        website_url: string | null;
         image_url: string | null;
         cloudinary_public_id: string | null;
         created_at: string;
@@ -106,6 +107,7 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
         name: sponsor.name,
         level: sponsor.level,
         year: sponsor.year,
+        website_url: sponsor.website_url,
         image_url: sponsor.image_url,
         cloudinary_public_id: sponsor.cloudinary_public_id,
         created_at: sponsor.created_at,
@@ -221,6 +223,28 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
       minWidth: 100,
       headerAlign: 'center',
       align: 'center',
+    },
+    {
+      field: 'website_url',
+      headerName: 'Website',
+      flex: 1,
+      minWidth: 180,
+      headerAlign: 'center',
+      align: 'center',
+      renderCell: params => {
+        const url = params.row.website_url;
+        if (!url) return '-';
+        return (
+          <a 
+            href={url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-primary hover:underline truncate max-w-full"
+          >
+            {url.replace(/^https?:\/\/(www\.)?/, '')}
+          </a>
+        );
+      },
     },
     {
       field: 'image_url',
