@@ -58,9 +58,13 @@ export function SponsorForm({ onSuccess }: SponsorFormProps) {
       return;
     }
 
+    // Add a hidden field to indicate that the image should be uploaded using the sponsors preset
+    formData.append('upload_preset', 'sponsors');
+
     console.log('Submitting form with data:', {
       name: formData.get('name'),
       website: formData.get('website'),
+      upload_preset: formData.get('upload_preset'),
       file: {
         name: file.name,
         type: file.type,

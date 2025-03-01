@@ -1,6 +1,57 @@
-# Database Management Scripts
+# Scripts Directory
 
-This directory contains scripts for managing the database for the CCC Landing Page application.
+This directory contains utility scripts for managing the application.
+
+## Essential Scripts
+
+### Database Management
+
+#### `neon-db-manager.js`
+Manages Neon database connections and operations.
+
+#### `test-db-connection.js`
+Tests the connection to the database.
+
+#### `init-db.js`
+Initializes the database with the schema.
+
+#### `init-all-dbs.js`
+Initializes all databases (development, preview, and production).
+
+#### `init-prod-db.js`
+Initializes the production database.
+
+#### `init-preview-db.js`
+Initializes the preview database.
+
+#### `check-db-schema.js`
+Checks the database schema and verifies that all required tables exist.
+
+#### `import-data.js`
+Imports data from CSV files into the database.
+
+#### `import-csv-data.js`
+Helper script for importing CSV data.
+
+### User Management
+
+#### `create-admin-user.js`
+Creates an admin user in the database.
+
+### Deployment
+
+#### `deploy-setup.js`
+Sets up the environment for deployment.
+
+### Cloudinary Image Management
+
+#### `reupload-sponsor-images.js`
+Re-uploads sponsor images to Cloudinary with the correct folder structure and updates the database records.
+
+### Maintenance
+
+#### `cleanup-scripts.js`
+Utility script to clean up the scripts directory by moving non-essential scripts to an archive folder.
 
 ## Environment Variables
 
@@ -9,75 +60,36 @@ These scripts require the following environment variables:
 - `DATABASE_URL`: The connection string for the database (used by most scripts)
 - `PROD_DATABASE_URL`: The connection string for the production database (used by copy scripts)
 - `PREVIEW_DATABASE_URL`: The connection string for the preview database (used by copy scripts)
+- `CLOUDINARY_CLOUD_NAME`: The Cloudinary cloud name
+- `CLOUDINARY_API_KEY`: The Cloudinary API key
+- `CLOUDINARY_API_SECRET`: The Cloudinary API secret
 
-If these environment variables are not set, the scripts will use the hardcoded values in the scripts.
-
-## Available Scripts
+## Available NPM Scripts
 
 ### Check Database Schema
-
-Checks the database schema and verifies that all required tables exist.
-
 ```bash
 npm run db:check
 ```
 
 ### Initialize Preview Database
-
-Initializes the database schema for the Preview environment.
-
 ```bash
 npm run db:init:preview
 ```
 
 ### Initialize Production Database
-
-Initializes the database schema for the Production environment.
-
 ```bash
 npm run db:init:prod
 ```
 
-### Copy Production Data to Preview
-
-Copies data from the Production database to the Preview database.
-
-```bash
-npm run db:copy:prod-to-preview
-```
-
 ### Fix Preview Database
-
-Runs all the necessary steps to fix the Preview database:
-1. Checks the current database state
-2. Initializes the database schema
-3. Copies data from Production to Preview
-4. Performs a final check
-
 ```bash
 npm run db:fix:preview
 ```
 
 ### Fix Production Database
-
-Runs all the necessary steps to fix the Production database:
-1. Checks the current database state
-2. Initializes the database schema
-3. Performs a final check
-
 ```bash
 npm run db:fix:prod
 ```
-
-## Troubleshooting
-
-If you encounter issues with the database:
-
-1. Check that your environment variables are set correctly
-2. Run `npm run db:check` to verify the database schema
-3. Run `npm run db:fix:preview` to fix the Preview database
-4. Run `npm run db:fix:prod` to fix the Production database
-5. Check the Vercel logs for more details on any errors
 
 ## Database Structure
 
@@ -97,7 +109,7 @@ The CCC Landing Page application uses the following database structure:
 - `name`: Sponsor name
 - `level`: UUID foreign key to sponsor_levels.id
 - `year`: Integer representing the year
-- `cloudinary_public_id`: Cloudinary public ID for the sponsor logo
+- `cloudinary_public_id`: Cloudinary public ID for the sponsor logo (format: "sponsors/[public_id]")
 - `image_url`: URL to the sponsor logo
 - `website_url`: URL to the sponsor website
 - `created_at`: Timestamp with timezone
