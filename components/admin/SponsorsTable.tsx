@@ -101,7 +101,7 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
         created_at: string;
         updated_at: string;
         level_name: string;
-        amount: number;
+        level_amount: number;
       }) => ({
         id: sponsor.id,
         name: sponsor.name,
@@ -112,9 +112,11 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
         cloudinary_public_id: sponsor.cloudinary_public_id,
         created_at: sponsor.created_at,
         updated_at: sponsor.updated_at,
+        level_name: sponsor.level_name,
+        level_amount: sponsor.level_amount,
         sponsor_levels: {
           name: sponsor.level_name,
-          amount: sponsor.amount
+          amount: null
         }
       }));
 
@@ -211,9 +213,9 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
       headerAlign: 'center',
       align: 'center',
       renderCell: (params) => {
-        // Add null check for params.row before accessing sponsor_levels
+        // Simplified to only show level name
         const level = params.row && params.row.sponsor_levels ? params.row.sponsor_levels : null;
-        return level ? `${level.name} ($${level.amount})` : 'Unknown Level';
+        return level?.name || 'Unknown Level';
       },
     },
     {
@@ -447,6 +449,17 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
                 setSelectedRows(newSelection);
               }}
               onCellClick={handleRowClick}
+              sx={{
+                '& .MuiDataGrid-columnHeader': {
+                  backgroundColor: 'background.paper',
+                },
+                '& .MuiDataGrid-cell': {
+                  borderBottom: '1px solid rgba(224, 224, 224, 1)',
+                },
+                '& .MuiDataGrid-columnHeader, & .MuiDataGrid-cell': {
+                  padding: '10px',
+                },
+              }}
             />
           </div>
         </>
