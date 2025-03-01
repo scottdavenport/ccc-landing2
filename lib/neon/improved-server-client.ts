@@ -20,8 +20,6 @@ if (process.env.NODE_ENV === 'production') {
       
       dynamicImport('ws').then((WebSocketModule: WebSocketModule) => {
         neonConfig.webSocketConstructor = WebSocketModule.default;
-        // Enable fetch-based queries for better performance
-        neonConfig.fetchConnectionCache = true;
       }).catch((error: Error) => {
         console.warn('WebSocket import failed, falling back to HTTP-only mode:', error);
       });
