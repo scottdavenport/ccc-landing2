@@ -8,7 +8,7 @@ export default function LoginRedirect() {
   
   useEffect(() => {
     // Redirect to the Clerk login page
-    router.replace('/admin/login');
+    router.replace('/admin/login/sign-in');
   }, [router]);
   
   return (
