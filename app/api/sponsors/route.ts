@@ -48,11 +48,15 @@ export async function POST(request: Request) {
     else if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData();
       name = formData.get('name') as string;
-      level = formData.get('level') as string;
-      year = parseInt(formData.get('year') as string, 10);
+      website_url = formData.get('website') as string;
+      // Use default level and year if not provided
+      level = formData.get('level') as string || 'Champion';
+      year = parseInt(formData.get('year') as string || new Date().getFullYear().toString(), 10);
       const logo = formData.get('logo') as File;
+      // Get the folder from form data, default to 'sponsors' if not provided
+      const folder = formData.get('folder') as string || 'sponsors';
 
-      if (!name || !level || isNaN(year) || !logo) {
+      if (!name || !logo) {
         return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
       }
 
@@ -63,7 +67,7 @@ export async function POST(request: Request) {
       const uploadPromise = new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           {
-            folder: 'sponsors',
+            folder: folder,
           },
           (error, result) => {
             if (error) reject(error);

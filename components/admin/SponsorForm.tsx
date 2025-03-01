@@ -58,9 +58,13 @@ export function SponsorForm({ onSuccess }: SponsorFormProps) {
       return;
     }
 
+    // Add a hidden field to indicate that the image should be uploaded to the sponsors folder
+    formData.append('folder', 'sponsors');
+
     console.log('Submitting form with data:', {
       name: formData.get('name'),
       website: formData.get('website'),
+      folder: formData.get('folder'),
       file: {
         name: file.name,
         type: file.type,

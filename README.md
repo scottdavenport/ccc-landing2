@@ -233,3 +233,30 @@ To restrict access to the admin dashboard:
 1. Create a user in the Clerk dashboard
 2. Assign the user the appropriate role/permissions
 3. The middleware is configured to protect all routes under `/admin` except for `/admin/login`
+
+## Cloudinary Image Management
+
+### Sponsor Images
+
+All sponsor images are stored in the `sponsors` folder in Cloudinary. This is enforced in several places:
+
+1. The `SponsorForm` component adds a `folder` parameter to the form data when uploading a new sponsor logo.
+2. The `/api/sponsors` route uses this parameter to upload the image to the correct folder.
+3. The `/api/sponsors/logo` route also uploads images to the `sponsors` folder.
+
+The database stores the full Cloudinary public ID including the folder path (e.g., `sponsors/image-id`), and the frontend components use this ID directly when displaying images.
+
+To verify that all sponsor images are correctly stored in the `sponsors` folder, you can run:
+
+```bash
+node scripts/verify-sponsor-images.js
+```
+
+### Scripts
+
+The project includes several scripts for managing Cloudinary images:
+
+- `scripts/reupload-sponsor-images.js`: Re-uploads sponsor images to Cloudinary using the image URLs from the database.
+- `scripts/verify-sponsor-images.js`: Verifies that all sponsor images are correctly stored in the `sponsors` folder.
+- `scripts/list-all-cloudinary-assets.js`: Lists all assets in Cloudinary.
+- `scripts/check-cloudinary-folders.js`: Checks the folder structure in Cloudinary.

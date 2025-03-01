@@ -11,7 +11,7 @@ const sponsors = [
   {
     name: 'Tech Corp',
     level: 'Platinum',
-    cloudinary_public_id: '/sponsor-placeholder.svg',
+    cloudinary_public_id: 'sponsors/tech-corp',
     website_url: 'https://example.com/techcorp',
     amount: 50000,
     year: 2025,
@@ -19,7 +19,7 @@ const sponsors = [
   {
     name: 'Innovation Labs',
     level: 'Gold',
-    cloudinary_public_id: '/sponsor-placeholder.svg',
+    cloudinary_public_id: 'sponsors/innovation-labs',
     website_url: 'https://example.com/innovationlabs',
     amount: 25000,
     year: 2025,
@@ -27,7 +27,7 @@ const sponsors = [
   {
     name: 'Future Systems',
     level: 'Silver',
-    cloudinary_public_id: '/sponsor-placeholder.svg',
+    cloudinary_public_id: 'sponsors/future-systems',
     website_url: null,
     amount: 10000,
     year: 2025,
@@ -35,7 +35,7 @@ const sponsors = [
   {
     name: 'Digital Solutions',
     level: 'Bronze',
-    cloudinary_public_id: '/sponsor-placeholder.svg',
+    cloudinary_public_id: 'sponsors/digital-solutions',
     amount: 5000,
     year: 2025,
   },
