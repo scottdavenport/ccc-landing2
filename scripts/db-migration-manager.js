@@ -188,6 +188,9 @@ async function runPrismaMigrations(databaseUrl, migrationName) {
 
 // Update environment files with the correct DATABASE_URL
 function updateEnvFiles(databaseUrl) {
+  // Remove any quotes from the database URL
+  const cleanDatabaseUrl = databaseUrl.replace(/^"|"$/g, '');
+  
   const envFiles = ['.env.local', '.env.development.local'];
   
   envFiles.forEach(file => {
@@ -198,16 +201,16 @@ function updateEnvFiles(databaseUrl) {
       
       // Replace or add DATABASE_URL
       if (content.includes('DATABASE_URL=')) {
-        content = content.replace(/DATABASE_URL=.*(\r?\n|$)/g, `DATABASE_URL=${databaseUrl}$1`);
+        content = content.replace(/DATABASE_URL=.*(\r?\n|$)/g, `DATABASE_URL=${cleanDatabaseUrl}$1`);
       } else {
-        content += `\nDATABASE_URL=${databaseUrl}\n`;
+        content += `\nDATABASE_URL=${cleanDatabaseUrl}\n`;
       }
       
       fs.writeFileSync(filePath, content);
       console.log(`✅ Updated ${file} with the correct DATABASE_URL`);
     } else if (file === '.env.local') {
       // Create .env.local file if it doesn't exist
-      let content = `DATABASE_URL=${databaseUrl}\n`;
+      let content = `DATABASE_URL=${cleanDatabaseUrl}\n`;
       
       // Add Neon API key and project ID if they exist in environment variables
       if (process.env.NEON_API_KEY) {
