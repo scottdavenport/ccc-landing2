@@ -259,46 +259,35 @@ async function main() {
       if (existingBranch) {
         console.log(`Branch '${branchName}' already exists, using existing branch`);
         
-        // Get the connection string for the existing branch
+        // Get the connection details from the Neon API
         try {
-          const response = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${existingBranch.id}/endpoints`, {
+          const connectionResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${existingBranch.id}/connection-uri`, {
             method: 'GET',
             headers: {
-              'Accept': 'application/json',
+              'Content-Type': 'application/json',
               'Authorization': `Bearer ${NEON_API_KEY}`
             }
           });
           
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`Failed to get branch endpoints: ${JSON.stringify(errorData)}`);
+          if (!connectionResponse.ok) {
+            throw new Error(`Failed to get connection details: ${connectionResponse.statusText}`);
           }
           
-          const data = await response.json();
+          const connectionData = await connectionResponse.json();
+          console.log('Connection details retrieved successfully');
           
-          console.log('Branch endpoints response:', JSON.stringify(data, null, 2));
-          
-          if (!data.endpoints || data.endpoints.length === 0) {
-            throw new Error('No endpoints found for the branch');
-          }
-          
-          // Construct the connection string from the host property
-          const endpoint = data.endpoints[0];
-          const host = endpoint.host;
-          
-          // Construct the connection string directly using the host
-          // Format: postgresql://user:password@host/database
-          const connectionString = `postgresql://neondb_owner:${NEON_API_KEY}@${host}/neondb?sslmode=require`;
+          // The connection string is directly available in the response
+          const connectionString = connectionData.connection_uri;
           
           // Log the connection string with the password masked for security
-          const maskedConnectionString = connectionString.replace(NEON_API_KEY, '********');
-          console.log('Connection string constructed:', maskedConnectionString);
+          const maskedConnectionString = connectionString.replace(/:[^:@]+@/, ':********@');
+          console.log('Connection string retrieved:', maskedConnectionString);
           
           // Update the .env files with the new connection string
-          await updateEnvFiles(connectionString);
+          updateEnvFiles(connectionString);
           return;
         } catch (error) {
-          console.error('❌ Failed to get branch endpoints:', error.message);
+          console.error('❌ Failed to get connection details:', error.message);
           process.exit(1);
         }
       }
@@ -321,19 +310,36 @@ async function main() {
         process.exit(1);
       }
       
-      // Construct the connection string from the host property
-      const endpoint = branchData.endpoints[0];
-      
-      // Construct the connection string directly using the host
-      // Format: postgresql://user:password@host/database
-      const connectionString = `postgresql://neondb_owner:${NEON_API_KEY}@${endpoint.host}/neondb?sslmode=require`;
-      
-      // Log the connection string with the password masked for security
-      const maskedConnectionString = connectionString.replace(NEON_API_KEY, '********');
-      console.log('Connection string constructed:', maskedConnectionString);
-      
-      // Update the .env files with the new connection string
-      await updateEnvFiles(connectionString);
+      // Get the connection details from the Neon API
+      try {
+        const connectionResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchData.id}/connection-uri`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${NEON_API_KEY}`
+          }
+        });
+        
+        if (!connectionResponse.ok) {
+          throw new Error(`Failed to get connection details: ${connectionResponse.statusText}`);
+        }
+        
+        const connectionData = await connectionResponse.json();
+        console.log('Connection details retrieved successfully');
+        
+        // The connection string is directly available in the response
+        const connectionString = connectionData.connection_uri;
+        
+        // Log the connection string with the password masked for security
+        const maskedConnectionString = connectionString.replace(/:[^:@]+@/, ':********@');
+        console.log('Connection string retrieved:', maskedConnectionString);
+        
+        // Update the .env files with the new connection string
+        updateEnvFiles(connectionString);
+      } catch (error) {
+        console.error('❌ Failed to get connection details:', error.message);
+        process.exit(1);
+      }
       break;
       
     case 'migrate':
