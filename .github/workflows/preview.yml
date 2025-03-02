@@ -63,12 +63,13 @@ jobs:
 
       - name: Set Clerk Authentication Variables in Vercel
         run: |
-          vercel env add NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY "${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}" preview --token=${{ secrets.VERCEL_TOKEN }}
-          vercel env add CLERK_SECRET_KEY "${{ secrets.CLERK_SECRET_KEY }}" preview --token=${{ secrets.VERCEL_TOKEN }}
-          vercel env add NEXT_PUBLIC_CLERK_SIGN_IN_URL "/admin/login" preview --token=${{ secrets.VERCEL_TOKEN }}
-          vercel env add NEXT_PUBLIC_CLERK_SIGN_UP_URL "/admin/login" preview --token=${{ secrets.VERCEL_TOKEN }}
-          vercel env add NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL "/admin" preview --token=${{ secrets.VERCEL_TOKEN }}
-          vercel env add NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL "/admin" preview --token=${{ secrets.VERCEL_TOKEN }}
+          # Create a temporary .env file with Clerk variables
+          echo "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}" > .vercel/.env.preview.local
+          echo "CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}" >> .vercel/.env.preview.local
+          echo "NEXT_PUBLIC_CLERK_SIGN_IN_URL=/admin/login" >> .vercel/.env.preview.local
+          echo "NEXT_PUBLIC_CLERK_SIGN_UP_URL=/admin/login" >> .vercel/.env.preview.local
+          echo "NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/admin" >> .vercel/.env.preview.local
+          echo "NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/admin" >> .vercel/.env.preview.local
 
       - name: Build Project Artifacts
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
