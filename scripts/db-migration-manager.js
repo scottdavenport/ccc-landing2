@@ -275,6 +275,14 @@ async function main() {
           }
           
           const data = await response.json();
+          
+          console.log('Branch endpoints response:', JSON.stringify(data, null, 2));
+          
+          // Check if endpoints array exists and has at least one element
+          if (!data.endpoints || data.endpoints.length === 0) {
+            throw new Error('No endpoints found for the branch');
+          }
+          
           const connectionString = data.endpoints[0].connection_uri;
           updateEnvFiles(connectionString);
           return;
@@ -298,6 +306,11 @@ async function main() {
       await new Promise(resolve => setTimeout(resolve, 5000));
       
       // Update environment files with the new branch's connection string
+      if (!branchData.endpoints || branchData.endpoints.length === 0) {
+        console.error('❌ No endpoints found for the newly created branch');
+        process.exit(1);
+      }
+      
       const connectionString = branchData.endpoints[0].connection_uri;
       updateEnvFiles(connectionString);
       break;
