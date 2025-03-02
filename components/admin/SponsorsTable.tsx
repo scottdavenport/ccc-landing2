@@ -402,6 +402,17 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
       return;
     }
     
+    // Check if the click is on the checkbox column (field will be undefined or empty for checkbox)
+    if (!params.field || params.field === '__check__') {
+      return;
+    }
+    
+    // Only proceed if the field is one of our defined column fields
+    const definedFields = columns.map(col => col.field);
+    if (!definedFields.includes(params.field)) {
+      return;
+    }
+    
     // Find the full sponsor data
     const sponsor = sponsors.find(s => s.id === params.id);
     if (sponsor && onEditSponsor) {
