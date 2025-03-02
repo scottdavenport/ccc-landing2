@@ -27,7 +27,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Set DATABASE_URL for production
+        id: set-db-url
+        run: |
+          # Set the production DATABASE_URL from secrets
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env.local
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
+          echo "db_url=${{ secrets.DATABASE_URL }}" >> $GITHUB_OUTPUT
+          
+          # Display environment for debugging
+          echo "Contents of .env:"
+          cat .env
+
       - name: Run migrations on main branch
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           # Run Prisma migrations on the main branch
           node scripts/db-migration-manager.js migrate
@@ -38,8 +52,20 @@ jobs:
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
+      - name: Set DATABASE_URL in Vercel
+        run: |
+          # Add to Vercel environment
+          vercel env add DATABASE_URL "${{ secrets.DATABASE_URL }}" production --token=${{ secrets.VERCEL_TOKEN }}
+          
+          # Create a .env.production file with the DATABASE_URL
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env.production
+
       - name: Build Project Artifacts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to Production
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }} 
