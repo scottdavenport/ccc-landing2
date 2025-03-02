@@ -59,10 +59,13 @@ jobs:
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Set DATABASE_URL in Vercel
+        id: set-db-url
         run: |
           # Get the connection string from .env.local
           DB_URL=$(grep DATABASE_URL .env.local | cut -d '"' -f 2)
           vercel env add DATABASE_URL "$DB_URL" preview --token=${{ secrets.VERCEL_TOKEN }}
+          # Save the DB_URL for later steps
+          echo "db_url=$DB_URL" >> $GITHUB_OUTPUT
 
       - name: Set Clerk Authentication Variables in Vercel
         run: |
@@ -75,10 +78,14 @@ jobs:
           echo "NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/admin" >> .vercel/.env.preview.local
 
       - name: Build Project Artifacts
+        env:
+          DATABASE_URL: ${{ steps.set-db-url.outputs.db_url }}
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy Preview to Vercel
         id: deploy
+        env:
+          DATABASE_URL: ${{ steps.set-db-url.outputs.db_url }}
         run: |
           DEPLOYMENT_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
           echo "deployment_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
