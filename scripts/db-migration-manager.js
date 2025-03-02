@@ -559,7 +559,11 @@ async function main() {
       const branchObj = branchesToDelete.find(b => b.name === branchToDelete);
       if (!branchObj) {
         console.error(`Branch '${branchToDelete}' not found`);
-        process.exit(1);
+        console.log('Available branches:');
+        branchesToDelete.forEach(b => console.log(`- ${b.name}`));
+        // Don't exit with error if branch doesn't exist - it might have been already deleted
+        console.log('Branch may have been already deleted or never existed. Continuing...');
+        process.exit(0);
       }
       
       const deleted = await deleteNeonBranch(branchObj.id);

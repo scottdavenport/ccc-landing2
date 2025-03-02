@@ -33,9 +33,11 @@ jobs:
       - name: Create Neon branch
         id: create-branch
         run: |
-          # Extract PR number from GITHUB_REF
-          PR_NUMBER=$(echo $GITHUB_REF | sed -n 's/refs\/pull\/\([0-9]*\)\/merge/\1/p')
+          # Get PR number directly from GitHub context
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          echo "PR Number: $PR_NUMBER"
           BRANCH_NAME="preview-pr-${PR_NUMBER}"
+          echo "Branch Name: $BRANCH_NAME"
           
           # Create a new branch in Neon (or use existing one)
           node scripts/db-migration-manager.js create-branch main $BRANCH_NAME
