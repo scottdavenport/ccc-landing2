@@ -202,6 +202,21 @@ function updateEnvFiles(databaseUrl) {
       
       fs.writeFileSync(filePath, content);
       console.log(`✅ Updated ${file} with the correct DATABASE_URL`);
+    } else if (file === '.env.local') {
+      // Create .env.local file if it doesn't exist
+      let content = `DATABASE_URL="${databaseUrl}"\n`;
+      
+      // Add Neon API key and project ID if they exist in environment variables
+      if (process.env.NEON_API_KEY) {
+        content += `NEON_API_KEY="${process.env.NEON_API_KEY}"\n`;
+      }
+      
+      if (process.env.NEON_PROJECT_ID) {
+        content += `NEON_PROJECT_ID="${process.env.NEON_PROJECT_ID}"\n`;
+      }
+      
+      fs.writeFileSync(filePath, content);
+      console.log(`✅ Created ${file} with the correct DATABASE_URL`);
     } else {
       console.log(`⚠️ ${file} does not exist, skipping`);
     }
