@@ -42,7 +42,9 @@ jobs:
       - name: Run migrations
         run: |
           # Run Prisma migrations on the new branch
-          node scripts/db-migration-manager.js migrate
+          # Use db push instead of migrate for preview environments
+          # This avoids the "schema not empty" error
+          npx prisma db push
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
