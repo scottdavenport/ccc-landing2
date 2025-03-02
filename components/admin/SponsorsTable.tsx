@@ -254,10 +254,11 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
       flex: 0.8,
       minWidth: 150,
       headerAlign: 'center',
+      align: 'center',
       renderCell: params => {
         const sponsor = params.row;
         return (
-          <div className="flex items-center justify-center w-full py-2">
+          <div className="flex items-center justify-center w-full h-full py-2">
             {sponsor.image_url ? (
               <div
                 className="relative w-12 h-12 hover:scale-110 transition-transform cursor-pointer group"
@@ -452,9 +453,13 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
               sx={{
                 '& .MuiDataGrid-columnHeader': {
                   backgroundColor: 'background.paper',
+                  display: 'flex',
+                  alignItems: 'center',
                 },
                 '& .MuiDataGrid-cell': {
                   borderBottom: '1px solid rgba(224, 224, 224, 1)',
+                  display: 'flex',
+                  alignItems: 'center',
                 },
                 '& .MuiDataGrid-columnHeader, & .MuiDataGrid-cell': {
                   padding: '10px',
