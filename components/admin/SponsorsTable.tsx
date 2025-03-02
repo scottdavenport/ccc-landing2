@@ -408,6 +408,7 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
     }
     
     // Only proceed if the field is one of our defined column fields
+    // This ensures checkbox selection doesn't trigger edit modal
     const definedFields = columns.map(col => col.field);
     if (!definedFields.includes(params.field)) {
       return;
