@@ -44,6 +44,8 @@ jobs:
           # Run Prisma migrations on the new branch
           # Use db push instead of migrate for preview environments
           # This avoids the "schema not empty" error
+          # Load DATABASE_URL from .env.local
+          export $(grep DATABASE_URL .env.local | xargs)
           npx prisma db push
 
       - name: Install Vercel CLI
