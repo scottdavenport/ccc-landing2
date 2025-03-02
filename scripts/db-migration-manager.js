@@ -49,16 +49,11 @@ async function createNeonBranch(branchName, parentId) {
     const response = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches`, {
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': `Bearer ${NEON_API_KEY}`,
-        'Content-Type': 'application/json'
+        'Authorization': `Bearer ${NEON_API_KEY}`
       },
       body: JSON.stringify({
-        endpoints: [
-          {
-            type: 'read_write'
-          }
-        ],
         branch: {
           name: branchName,
           parent_id: parentId
@@ -73,9 +68,17 @@ async function createNeonBranch(branchName, parentId) {
 
     const data = await response.json();
     console.log('✅ Branch created successfully');
-    return data;
+
+    // Wait for the branch to be ready
+    // Increased from 15 seconds to 30 seconds
+    console.log('Waiting for branch to be ready...');
+    await new Promise(resolve => setTimeout(resolve, 30000));
+
+    // Get connection details
+    const connectionDetails = await getConnectionDetails(data.branch.id);
+    return connectionDetails;
   } catch (error) {
-    console.error('❌ Failed to create branch:', error.message);
+    console.error('Error creating branch:', error.message);
     return null;
   }
 }
@@ -239,26 +242,26 @@ function updateEnvFiles(databaseUrl) {
   });
 }
 
-// Add a new function for retrying API calls
-async function retryApiCall(apiCallFn, maxRetries = 3, delay = 5000) {
-  let lastError;
+// Retry API call with exponential backoff
+async function retryApiCall(apiCallFn, maxRetries = 3, delay = 10000) {
+  let retries = 0;
   
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  while (retries < maxRetries) {
     try {
-      console.log(`Attempt ${attempt}/${maxRetries}...`);
+      console.log(`Attempt ${retries + 1}/${maxRetries}...`);
       return await apiCallFn();
     } catch (error) {
-      console.error(`Attempt ${attempt} failed:`, error.message);
-      lastError = error;
+      console.log(`Attempt ${retries + 1} failed: ${error.message}`);
       
-      if (attempt < maxRetries) {
-        console.log(`Waiting ${delay/1000} seconds before retrying...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+      if (retries === maxRetries - 1) {
+        throw error;
       }
+      
+      console.log(`Waiting ${delay / 1000} seconds before retrying...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      retries++;
     }
   }
-  
-  throw lastError;
 }
 
 // Main function
