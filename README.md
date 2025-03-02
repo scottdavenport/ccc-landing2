@@ -307,12 +307,23 @@ The project includes GitHub Actions workflows for automated database management:
    - Comments on the PR with deployment details
 
 2. **Production Deployments** (push to main):
-   - Runs migrations on the main branch
+   - Runs migrations on the main branch using `prisma db push --accept-data-loss`
+   - Sets the `DATABASE_URL` environment variable in multiple places
    - Deploys to Vercel production environment
 
 3. **Cleanup** (PR closed):
    - Deletes the Neon branch associated with the PR
    - Comments on the PR confirming cleanup
+
+### Production Deployment Notes
+
+For production deployments, we use a different approach to database migrations:
+
+1. Instead of using `prisma migrate deploy`, we use `prisma db push --accept-data-loss` to handle schema changes on an existing database
+2. The `DATABASE_URL` environment variable must be set as a GitHub repository secret
+3. The workflow sets the `DATABASE_URL` in multiple places to ensure it's available throughout the deployment process
+
+For more details on the production deployment process, see [docs/production-deployment.md](docs/production-deployment.md).
 
 ### Migration Management
 
