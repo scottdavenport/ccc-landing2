@@ -233,6 +233,36 @@ async function main() {
       const branches = await listNeonBranches();
       if (!branches) process.exit(1);
       
+      // Check if branch already exists
+      const existingBranch = branches.find(b => b.name === branchName);
+      if (existingBranch) {
+        console.log(`Branch '${branchName}' already exists, using existing branch`);
+        
+        // Get the connection string for the existing branch
+        try {
+          const response = await fetch(`${NEON_API_URL}/projects/${PROJECT_ID}/branches/${existingBranch.id}/endpoints`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${NEON_API_KEY}`
+            }
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Failed to get branch endpoints: ${JSON.stringify(errorData)}`);
+          }
+          
+          const data = await response.json();
+          const connectionString = data.endpoints[0].connection_uri;
+          updateEnvFiles(connectionString);
+          return;
+        } catch (error) {
+          console.error('❌ Failed to get branch endpoints:', error.message);
+          process.exit(1);
+        }
+      }
+      
       const parentBranchObj = branches.find(b => b.name === parentBranch);
       if (!parentBranchObj) {
         console.error(`Parent branch '${parentBranch}' not found`);

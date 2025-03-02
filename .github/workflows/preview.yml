@@ -33,13 +33,15 @@ jobs:
           PR_NUMBER=$(echo $GITHUB_REF | sed -n 's/refs\/pull\/\([0-9]*\)\/merge/\1/p')
           BRANCH_NAME="preview-pr-${PR_NUMBER}"
           
-          # Create a new branch in Neon
+          # Create a new branch in Neon (or use existing one)
           node scripts/db-migration-manager.js create-branch main $BRANCH_NAME
           
-          # Create .env.local file with necessary environment variables
-          echo "DATABASE_URL=\"postgresql://user:password@db.example.com:5432/database?sslmode=require\"" > .env.local
-          echo "NEON_API_KEY=\"$NEON_API_KEY\"" >> .env.local
-          echo "NEON_PROJECT_ID=\"$NEON_PROJECT_ID\"" >> .env.local
+          # Create .env.local file with necessary environment variables if it doesn't exist
+          if [ ! -f .env.local ]; then
+            echo "DATABASE_URL=\"postgresql://user:password@db.example.com:5432/database?sslmode=require\"" > .env.local
+            echo "NEON_API_KEY=\"$NEON_API_KEY\"" >> .env.local
+            echo "NEON_PROJECT_ID=\"$NEON_PROJECT_ID\"" >> .env.local
+          fi
           
           # Set output for later steps
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
