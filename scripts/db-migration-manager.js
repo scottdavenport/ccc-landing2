@@ -261,13 +261,84 @@ async function main() {
         
         // Get the connection details from the Neon API
         try {
-          const connectionResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${existingBranch.id}/connection-uri`, {
+          // Get the endpoints for the branch to find the compute endpoint ID
+          const endpointsResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${existingBranch.id}/endpoints`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${NEON_API_KEY}`
             }
           });
+          
+          if (!endpointsResponse.ok) {
+            throw new Error(`Failed to get branch endpoints: ${endpointsResponse.statusText}`);
+          }
+          
+          const endpointsData = await endpointsResponse.json();
+          console.log('Branch endpoints retrieved successfully');
+          
+          if (!endpointsData.endpoints || endpointsData.endpoints.length === 0) {
+            throw new Error('No endpoints found for this branch');
+          }
+          
+          // Get the first endpoint ID
+          const endpointId = endpointsData.endpoints[0].id;
+          
+          // Get the databases for the branch
+          const databasesResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${existingBranch.id}/databases`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${NEON_API_KEY}`
+            }
+          });
+          
+          if (!databasesResponse.ok) {
+            throw new Error(`Failed to get branch databases: ${databasesResponse.statusText}`);
+          }
+          
+          const databasesData = await databasesResponse.json();
+          
+          if (!databasesData.databases || databasesData.databases.length === 0) {
+            throw new Error('No databases found for this branch');
+          }
+          
+          // Get the first database name
+          const databaseName = databasesData.databases[0].name;
+          
+          // Get the roles for the branch
+          const rolesResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${existingBranch.id}/roles`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${NEON_API_KEY}`
+            }
+          });
+          
+          if (!rolesResponse.ok) {
+            throw new Error(`Failed to get branch roles: ${rolesResponse.statusText}`);
+          }
+          
+          const rolesData = await rolesResponse.json();
+          
+          if (!rolesData.roles || rolesData.roles.length === 0) {
+            throw new Error('No roles found for this branch');
+          }
+          
+          // Get the first role name
+          const roleName = rolesData.roles[0].name;
+          
+          // Now use the correct endpoint to get the connection URI
+          const connectionResponse = await fetch(
+            `${NEON_API_URL}/projects/${NEON_PROJECT_ID}/connection_uri?endpoint_id=${endpointId}&database=${databaseName}&role=${roleName}`, 
+            {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${NEON_API_KEY}`
+              }
+            }
+          );
           
           if (!connectionResponse.ok) {
             throw new Error(`Failed to get connection details: ${connectionResponse.statusText}`);
@@ -312,13 +383,64 @@ async function main() {
       
       // Get the connection details from the Neon API
       try {
-        const connectionResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchData.id}/connection-uri`, {
+        // Get the endpoint ID from the branch data
+        const endpointId = branchData.endpoints[0].id;
+        
+        // Get the databases for the branch
+        const databasesResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchData.id}/databases`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${NEON_API_KEY}`
           }
         });
+        
+        if (!databasesResponse.ok) {
+          throw new Error(`Failed to get branch databases: ${databasesResponse.statusText}`);
+        }
+        
+        const databasesData = await databasesResponse.json();
+        
+        if (!databasesData.databases || databasesData.databases.length === 0) {
+          throw new Error('No databases found for this branch');
+        }
+        
+        // Get the first database name
+        const databaseName = databasesData.databases[0].name;
+        
+        // Get the roles for the branch
+        const rolesResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchData.id}/roles`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${NEON_API_KEY}`
+          }
+        });
+        
+        if (!rolesResponse.ok) {
+          throw new Error(`Failed to get branch roles: ${rolesResponse.statusText}`);
+        }
+        
+        const rolesData = await rolesResponse.json();
+        
+        if (!rolesData.roles || rolesData.roles.length === 0) {
+          throw new Error('No roles found for this branch');
+        }
+        
+        // Get the first role name
+        const roleName = rolesData.roles[0].name;
+        
+        // Now use the correct endpoint to get the connection URI
+        const connectionResponse = await fetch(
+          `${NEON_API_URL}/projects/${NEON_PROJECT_ID}/connection_uri?endpoint_id=${endpointId}&database=${databaseName}&role=${roleName}`, 
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${NEON_API_KEY}`
+            }
+          }
+        );
         
         if (!connectionResponse.ok) {
           throw new Error(`Failed to get connection details: ${connectionResponse.statusText}`);
