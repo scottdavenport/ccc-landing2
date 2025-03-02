@@ -71,26 +71,48 @@ jobs:
           # Save the DB_URL for later steps
           echo "db_url=$DB_URL" >> $GITHUB_OUTPUT
           
-          # Also export it for the current step
-          export DATABASE_URL="$DB_URL"
+          # Create a .env file in the project root with the DATABASE_URL
+          echo "DATABASE_URL=$DB_URL" > .env
           
-          # Add to local .env file for build step
-          echo "DATABASE_URL=$DB_URL" >> .env
+          # Also add it to the Vercel environment files
+          echo "DATABASE_URL=$DB_URL" >> .vercel/.env.preview.local
+          
+          # Display environment for debugging
+          echo "Contents of .env:"
+          cat .env
+          echo "Contents of .vercel/.env.preview.local:"
+          cat .vercel/.env.preview.local
 
       - name: Set Clerk Authentication Variables in Vercel
         run: |
           # Create a temporary .env file with Clerk variables
-          echo "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}" > .vercel/.env.preview.local
+          echo "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}" >> .vercel/.env.preview.local
           echo "CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}" >> .vercel/.env.preview.local
           echo "NEXT_PUBLIC_CLERK_SIGN_IN_URL=/admin/login" >> .vercel/.env.preview.local
           echo "NEXT_PUBLIC_CLERK_SIGN_UP_URL=/admin/login" >> .vercel/.env.preview.local
           echo "NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/admin" >> .vercel/.env.preview.local
           echo "NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/admin" >> .vercel/.env.preview.local
+          
+          # Also add these to the root .env file
+          echo "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}" >> .env
+          echo "CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}" >> .env
+          echo "NEXT_PUBLIC_CLERK_SIGN_IN_URL=/admin/login" >> .env
+          echo "NEXT_PUBLIC_CLERK_SIGN_UP_URL=/admin/login" >> .env
+          echo "NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/admin" >> .env
+          echo "NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/admin" >> .env
 
       - name: Build Project Artifacts
         env:
           DATABASE_URL: ${{ steps.set-db-url.outputs.db_url }}
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        run: |
+          # Print environment variables for debugging
+          echo "DATABASE_URL environment variable: $DATABASE_URL"
+          
+          # Create a .env.production file with the DATABASE_URL
+          echo "DATABASE_URL=$DATABASE_URL" > .env.production
+          
+          # Run the build
+          vercel build --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy Preview to Vercel
         id: deploy
