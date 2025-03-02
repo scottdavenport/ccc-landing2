@@ -158,8 +158,11 @@ async function runPrismaMigrations(databaseUrl, migrationName) {
   console.log('Running Prisma migrations...');
   
   try {
+    // Ensure the database URL doesn't have quotes around it
+    const cleanDatabaseUrl = databaseUrl.replace(/^"|"$/g, '');
+    
     // Set DATABASE_URL environment variable for the child process
-    const env = { ...process.env, DATABASE_URL: databaseUrl };
+    const env = { ...process.env, DATABASE_URL: cleanDatabaseUrl };
     
     if (migrationName) {
       // Create a new migration
