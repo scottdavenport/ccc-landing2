@@ -169,8 +169,8 @@ async function runPrismaMigrations(databaseUrl, migrationName) {
     
     // For production (main branch), use db push to avoid migration issues with existing schema
     if (currentBranch === 'main') {
-      console.log('Using prisma db push for production environment...');
-      execSync('npx prisma db push', { 
+      console.log('Using prisma db push for production environment with --accept-data-loss flag...');
+      execSync('npx prisma db push --accept-data-loss', { 
         env,
         stdio: 'inherit' 
       });
