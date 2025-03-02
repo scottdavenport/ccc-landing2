@@ -62,7 +62,7 @@ jobs:
         id: set-db-url
         run: |
           # Get the connection string from .env.local
-          DB_URL=$(grep DATABASE_URL .env.local | cut -d '"' -f 2)
+          DB_URL=$(grep DATABASE_URL .env.local | cut -d '=' -f 2 | tr -d '"')
           vercel env add DATABASE_URL "$DB_URL" preview --token=${{ secrets.VERCEL_TOKEN }}
           # Save the DB_URL for later steps
           echo "db_url=$DB_URL" >> $GITHUB_OUTPUT
