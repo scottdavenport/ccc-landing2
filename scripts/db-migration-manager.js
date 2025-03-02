@@ -239,6 +239,28 @@ function updateEnvFiles(databaseUrl) {
   });
 }
 
+// Add a new function for retrying API calls
+async function retryApiCall(apiCallFn, maxRetries = 3, delay = 5000) {
+  let lastError;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`Attempt ${attempt}/${maxRetries}...`);
+      return await apiCallFn();
+    } catch (error) {
+      console.error(`Attempt ${attempt} failed:`, error.message);
+      lastError = error;
+      
+      if (attempt < maxRetries) {
+        console.log(`Waiting ${delay/1000} seconds before retrying...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError;
+}
+
 // Main function
 async function main() {
   const args = process.argv.slice(2);
@@ -386,76 +408,96 @@ async function main() {
       
       // Wait for the branch to be ready
       console.log('Waiting for branch to be ready...');
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      // Increase wait time from 5 seconds to 15 seconds to ensure database is ready
+      await new Promise(resolve => setTimeout(resolve, 15000));
       
       if (!branchData.endpoints || branchData.endpoints.length === 0) {
         console.error('❌ No endpoints found for the newly created branch');
         process.exit(1);
       }
       
-      // Get the connection details from the Neon API
+      // Get the connection details from the Neon API with retry logic
       try {
         // Get the endpoint ID from the branch data
         const endpointId = branchData.endpoints[0].id;
         
-        // Get the databases for the branch
-        const databasesResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchData.id}/databases`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${NEON_API_KEY}`
+        // Get the databases for the branch with retry logic
+        const getDatabases = async () => {
+          console.log('Getting databases for the branch...');
+          const databasesResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchData.id}/databases`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${NEON_API_KEY}`
+            }
+          });
+          
+          if (!databasesResponse.ok) {
+            throw new Error(`Failed to get branch databases: ${databasesResponse.statusText}`);
           }
-        });
+          
+          const databasesData = await databasesResponse.json();
+          
+          if (!databasesData.databases || databasesData.databases.length === 0) {
+            throw new Error('No databases found for this branch');
+          }
+          
+          return databasesData;
+        };
         
-        if (!databasesResponse.ok) {
-          throw new Error(`Failed to get branch databases: ${databasesResponse.statusText}`);
-        }
-        
-        const databasesData = await databasesResponse.json();
-        
-        if (!databasesData.databases || databasesData.databases.length === 0) {
-          throw new Error('No databases found for this branch');
-        }
+        const databasesData = await retryApiCall(getDatabases);
         
         // Get the first database name
         const databaseName = databasesData.databases[0].name;
         
-        // Get the roles for the branch
-        const rolesResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchData.id}/roles`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${NEON_API_KEY}`
+        // Get the roles for the branch with retry logic
+        const getRoles = async () => {
+          console.log('Getting roles for the branch...');
+          const rolesResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchData.id}/roles`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${NEON_API_KEY}`
+            }
+          });
+          
+          if (!rolesResponse.ok) {
+            throw new Error(`Failed to get branch roles: ${rolesResponse.statusText}`);
           }
-        });
+          
+          const rolesData = await rolesResponse.json();
+          
+          if (!rolesData.roles || rolesData.roles.length === 0) {
+            throw new Error('No roles found for this branch');
+          }
+          
+          return rolesData;
+        };
         
-        if (!rolesResponse.ok) {
-          throw new Error(`Failed to get branch roles: ${rolesResponse.statusText}`);
-        }
-        
-        const rolesData = await rolesResponse.json();
-        
-        if (!rolesData.roles || rolesData.roles.length === 0) {
-          throw new Error('No roles found for this branch');
-        }
+        const rolesData = await retryApiCall(getRoles);
         
         // Get the first role name
         const roleName = rolesData.roles[0].name;
         
-        // Get the role password
-        const passwordResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchData.id}/roles/${roleName}/reveal_password`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${NEON_API_KEY}`
+        // Get the role password with retry logic
+        const getPassword = async () => {
+          console.log('Getting role password...');
+          const passwordResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchData.id}/roles/${roleName}/reveal_password`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${NEON_API_KEY}`
+            }
+          });
+          
+          if (!passwordResponse.ok) {
+            throw new Error(`Failed to get role password: ${passwordResponse.statusText}`);
           }
-        });
+          
+          return await passwordResponse.json();
+        };
         
-        if (!passwordResponse.ok) {
-          throw new Error(`Failed to get role password: ${passwordResponse.statusText}`);
-        }
-        
-        const passwordData = await passwordResponse.json();
+        const passwordData = await retryApiCall(getPassword);
         const password = passwordData.password;
         
         // Get the endpoint host
