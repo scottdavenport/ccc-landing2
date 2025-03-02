@@ -15,6 +15,11 @@ const publicRoutes = createRouteMatcher([
   "/api/webhooks(.*)",
   "/admin/login(.*)",
   "/admin-login",
+  "/_next/(.*)", // Make Next.js static assets public
+  "/favicon.ico",
+  "/robots.txt",
+  "/sitemap.xml",
+  "/images/(.*)", // Make image assets public
 ]);
 
 const ignoredRoutes = createRouteMatcher([
