@@ -61,11 +61,21 @@ jobs:
       - name: Set DATABASE_URL in Vercel
         id: set-db-url
         run: |
-          # Get the connection string from .env.local
-          DB_URL=$(grep DATABASE_URL .env.local | cut -d '=' -f 2 | tr -d '"')
+          # Get the connection string from .env.local - properly extract just the value
+          DB_URL=$(grep DATABASE_URL .env.local | cut -d '=' -f 2- | tr -d '"' | tr -d ' ')
+          echo "Database URL extracted: $DB_URL"
+          
+          # Add to Vercel environment
           vercel env add DATABASE_URL "$DB_URL" preview --token=${{ secrets.VERCEL_TOKEN }}
+          
           # Save the DB_URL for later steps
           echo "db_url=$DB_URL" >> $GITHUB_OUTPUT
+          
+          # Also export it for the current step
+          export DATABASE_URL="$DB_URL"
+          
+          # Add to local .env file for build step
+          echo "DATABASE_URL=$DB_URL" >> .env
 
       - name: Set Clerk Authentication Variables in Vercel
         run: |
