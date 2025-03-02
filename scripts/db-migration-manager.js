@@ -83,6 +83,72 @@ async function createNeonBranch(branchName, parentId) {
   }
 }
 
+// Get connection details for a branch
+async function getConnectionDetails(branchId) {
+  console.log(`Getting connection details for branch ID: ${branchId}`);
+  
+  try {
+    // Get the endpoints for the branch
+    const endpointsResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchId}/endpoints`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${NEON_API_KEY}`
+      }
+    });
+    
+    if (!endpointsResponse.ok) {
+      throw new Error(`Failed to get branch endpoints: ${endpointsResponse.statusText}`);
+    }
+    
+    const endpointsData = await endpointsResponse.json();
+    console.log('Branch endpoints retrieved successfully');
+    
+    if (!endpointsData.endpoints || endpointsData.endpoints.length === 0) {
+      throw new Error('No endpoints found for this branch');
+    }
+    
+    // Implement retry logic for endpoints
+    let retries = 0;
+    const maxRetries = 3;
+    const retryDelay = 10000; // 10 seconds
+    
+    while (endpointsData.endpoints.length === 0 && retries < maxRetries) {
+      console.log(`No endpoints found, retrying in ${retryDelay/1000} seconds... (${retries + 1}/${maxRetries})`);
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+      
+      const retryResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchId}/endpoints`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${NEON_API_KEY}`
+        }
+      });
+      
+      if (retryResponse.ok) {
+        const retryData = await retryResponse.json();
+        if (retryData.endpoints && retryData.endpoints.length > 0) {
+          console.log('Endpoints found on retry!');
+          return {
+            id: branchId,
+            endpoints: retryData.endpoints
+          };
+        }
+      }
+      
+      retries++;
+    }
+    
+    return {
+      id: branchId,
+      endpoints: endpointsData.endpoints
+    };
+  } catch (error) {
+    console.error('Error getting connection details:', error.message);
+    throw error;
+  }
+}
+
 // List branches in Neon project
 async function listNeonBranches() {
   if (!NEON_API_KEY) {
