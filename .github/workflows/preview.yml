@@ -36,11 +36,12 @@ jobs:
           # Create a new branch in Neon
           node scripts/db-migration-manager.js create-branch main $BRANCH_NAME
           
-          # Get the connection string from .env.local
-          DB_URL=$(grep DATABASE_URL .env.local | cut -d '"' -f 2)
+          # Create .env.local file with necessary environment variables
+          echo "DATABASE_URL=\"postgresql://user:password@db.example.com:5432/database?sslmode=require\"" > .env.local
+          echo "NEON_API_KEY=\"$NEON_API_KEY\"" >> .env.local
+          echo "NEON_PROJECT_ID=\"$NEON_PROJECT_ID\"" >> .env.local
           
           # Set output for later steps
-          echo "database_url=$DB_URL" >> $GITHUB_OUTPUT
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
       - name: Run migrations
@@ -56,7 +57,9 @@ jobs:
 
       - name: Set DATABASE_URL in Vercel
         run: |
-          vercel env add DATABASE_URL ${{ steps.create-branch.outputs.database_url }} preview --token=${{ secrets.VERCEL_TOKEN }}
+          # Get the connection string from .env.local
+          DB_URL=$(grep DATABASE_URL .env.local | cut -d '"' -f 2)
+          vercel env add DATABASE_URL "$DB_URL" preview --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build Project Artifacts
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
