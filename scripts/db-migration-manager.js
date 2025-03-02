@@ -164,7 +164,17 @@ async function runPrismaMigrations(databaseUrl, migrationName) {
     // Set DATABASE_URL environment variable for the child process
     const env = { ...process.env, DATABASE_URL: cleanDatabaseUrl };
     
-    if (migrationName) {
+    // Get current branch
+    const currentBranch = getCurrentBranch();
+    
+    // For production (main branch), use db push to avoid migration issues with existing schema
+    if (currentBranch === 'main') {
+      console.log('Using prisma db push for production environment...');
+      execSync('npx prisma db push', { 
+        env,
+        stdio: 'inherit' 
+      });
+    } else if (migrationName) {
       // Create a new migration
       execSync(`npx prisma migrate dev --name ${migrationName}`, { 
         env,
