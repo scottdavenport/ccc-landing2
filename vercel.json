@@ -1,0 +1,14 @@
+{
+  "git": {
+    "deploymentEnabled": {
+      "main": false,
+      "feature/db-migration-strategy": false,
+      "preview": false,
+      "production": false
+    }
+  },
+  "github": {
+    "enabled": false,
+    "silent": true
+  }
+} 
