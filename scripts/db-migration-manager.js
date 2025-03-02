@@ -328,31 +328,33 @@ async function main() {
           // Get the first role name
           const roleName = rolesData.roles[0].name;
           
-          // Now use the correct endpoint to get the connection URI
-          const connectionResponse = await fetch(
-            `${NEON_API_URL}/projects/${NEON_PROJECT_ID}/connection_uri?endpoint_id=${endpointId}&database=${databaseName}&role=${roleName}`, 
-            {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${NEON_API_KEY}`
-              }
+          // Get the role password
+          const passwordResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${existingBranch.id}/roles/${roleName}/reveal_password`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${NEON_API_KEY}`
             }
-          );
+          });
           
-          if (!connectionResponse.ok) {
-            throw new Error(`Failed to get connection details: ${connectionResponse.statusText}`);
+          if (!passwordResponse.ok) {
+            throw new Error(`Failed to get role password: ${passwordResponse.statusText}`);
           }
           
-          const connectionData = await connectionResponse.json();
-          console.log('Connection details retrieved successfully');
+          const passwordData = await passwordResponse.json();
+          const password = passwordData.password;
           
-          // The connection string is directly available in the response
-          const connectionString = connectionData.connection_uri;
+          // Get the endpoint host
+          const host = endpointsData.endpoints[0].host;
+          
+          // Construct the connection string
+          const connectionString = `postgresql://${roleName}:${password}@${host}/${databaseName}`;
+          
+          console.log('Connection details retrieved successfully');
           
           // Log the connection string with the password masked for security
           const maskedConnectionString = connectionString.replace(/:[^:@]+@/, ':********@');
-          console.log('Connection string retrieved:', maskedConnectionString);
+          console.log('Connection string constructed:', maskedConnectionString);
           
           // Update the .env files with the new connection string
           updateEnvFiles(connectionString);
@@ -430,31 +432,33 @@ async function main() {
         // Get the first role name
         const roleName = rolesData.roles[0].name;
         
-        // Now use the correct endpoint to get the connection URI
-        const connectionResponse = await fetch(
-          `${NEON_API_URL}/projects/${NEON_PROJECT_ID}/connection_uri?endpoint_id=${endpointId}&database=${databaseName}&role=${roleName}`, 
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${NEON_API_KEY}`
-            }
+        // Get the role password
+        const passwordResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchData.id}/roles/${roleName}/reveal_password`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${NEON_API_KEY}`
           }
-        );
+        });
         
-        if (!connectionResponse.ok) {
-          throw new Error(`Failed to get connection details: ${connectionResponse.statusText}`);
+        if (!passwordResponse.ok) {
+          throw new Error(`Failed to get role password: ${passwordResponse.statusText}`);
         }
         
-        const connectionData = await connectionResponse.json();
-        console.log('Connection details retrieved successfully');
+        const passwordData = await passwordResponse.json();
+        const password = passwordData.password;
         
-        // The connection string is directly available in the response
-        const connectionString = connectionData.connection_uri;
+        // Get the endpoint host
+        const host = branchData.endpoints[0].host;
+        
+        // Construct the connection string
+        const connectionString = `postgresql://${roleName}:${password}@${host}/${databaseName}`;
+        
+        console.log('Connection details retrieved successfully');
         
         // Log the connection string with the password masked for security
         const maskedConnectionString = connectionString.replace(/:[^:@]+@/, ':********@');
-        console.log('Connection string retrieved:', maskedConnectionString);
+        console.log('Connection string constructed:', maskedConnectionString);
         
         // Update the .env files with the new connection string
         updateEnvFiles(connectionString);
