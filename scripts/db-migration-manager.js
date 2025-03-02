@@ -13,7 +13,7 @@ dotenv.config({ path: '.env.development.local' });
 // Neon API configuration
 const NEON_API_KEY = process.env.NEON_API_KEY;
 const NEON_API_URL = 'https://console.neon.tech/api/v2';
-const PROJECT_ID = process.env.NEON_PROJECT_ID;
+const NEON_PROJECT_ID = process.env.NEON_PROJECT_ID;
 
 // Database URLs should come from environment variables
 const DB_URLS = {
@@ -38,7 +38,7 @@ async function createNeonBranch(branchName, parentId) {
     process.exit(1);
   }
 
-  if (!PROJECT_ID) {
+  if (!NEON_PROJECT_ID) {
     console.error('NEON_PROJECT_ID environment variable is not set');
     process.exit(1);
   }
@@ -46,7 +46,7 @@ async function createNeonBranch(branchName, parentId) {
   console.log(`Creating Neon branch '${branchName}' from parent '${parentId}'...`);
 
   try {
-    const response = await fetch(`${NEON_API_URL}/projects/${PROJECT_ID}/branches`, {
+    const response = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches`, {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -87,7 +87,7 @@ async function listNeonBranches() {
     process.exit(1);
   }
 
-  if (!PROJECT_ID) {
+  if (!NEON_PROJECT_ID) {
     console.error('NEON_PROJECT_ID environment variable is not set');
     process.exit(1);
   }
@@ -95,7 +95,7 @@ async function listNeonBranches() {
   console.log('Listing Neon branches...');
 
   try {
-    const response = await fetch(`${NEON_API_URL}/projects/${PROJECT_ID}/branches`, {
+    const response = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -124,7 +124,7 @@ async function deleteNeonBranch(branchId) {
     process.exit(1);
   }
 
-  if (!PROJECT_ID) {
+  if (!NEON_PROJECT_ID) {
     console.error('NEON_PROJECT_ID environment variable is not set');
     process.exit(1);
   }
@@ -132,7 +132,7 @@ async function deleteNeonBranch(branchId) {
   console.log(`Deleting Neon branch '${branchId}'...`);
 
   try {
-    const response = await fetch(`${NEON_API_URL}/projects/${PROJECT_ID}/branches/${branchId}`, {
+    const response = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchId}`, {
       method: 'DELETE',
       headers: {
         'Accept': 'application/json',
@@ -261,7 +261,7 @@ async function main() {
         
         // Get the connection string for the existing branch
         try {
-          const response = await fetch(`${NEON_API_URL}/projects/${PROJECT_ID}/branches/${existingBranch.id}/endpoints`, {
+          const response = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${existingBranch.id}/endpoints`, {
             method: 'GET',
             headers: {
               'Accept': 'application/json',
@@ -278,13 +278,36 @@ async function main() {
           
           console.log('Branch endpoints response:', JSON.stringify(data, null, 2));
           
-          // Check if endpoints array exists and has at least one element
           if (!data.endpoints || data.endpoints.length === 0) {
             throw new Error('No endpoints found for the branch');
           }
           
-          const connectionString = data.endpoints[0].connection_uri;
-          updateEnvFiles(connectionString);
+          // Construct the connection string from the host property
+          const endpoint = data.endpoints[0];
+          const host = endpoint.host;
+          
+          // Get the connection details from the Neon API
+          const connectionDetailsResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${existingBranch.id}/endpoints/${endpoint.id}/connection-uri`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${NEON_API_KEY}`,
+            },
+          });
+          
+          if (!connectionDetailsResponse.ok) {
+            console.error('❌ Failed to get connection details:', await connectionDetailsResponse.text());
+            process.exit(1);
+          }
+          
+          const connectionDetails = await connectionDetailsResponse.json();
+          console.log('Connection details retrieved successfully');
+          
+          // Use the connection URI from the API response
+          const connectionString = connectionDetails.connection_uri;
+          
+          // Update the .env files with the new connection string
+          await updateEnvFiles(connectionString);
           return;
         } catch (error) {
           console.error('❌ Failed to get branch endpoints:', error.message);
@@ -305,14 +328,36 @@ async function main() {
       console.log('Waiting for branch to be ready...');
       await new Promise(resolve => setTimeout(resolve, 5000));
       
-      // Update environment files with the new branch's connection string
       if (!branchData.endpoints || branchData.endpoints.length === 0) {
         console.error('❌ No endpoints found for the newly created branch');
         process.exit(1);
       }
       
-      const connectionString = branchData.endpoints[0].connection_uri;
-      updateEnvFiles(connectionString);
+      // Construct the connection string from the host property
+      const endpoint = branchData.endpoints[0];
+      
+      // Get the connection details from the Neon API
+      const connectionDetailsResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchData.id}/endpoints/${endpoint.id}/connection-uri`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${NEON_API_KEY}`,
+        },
+      });
+      
+      if (!connectionDetailsResponse.ok) {
+        console.error('❌ Failed to get connection details:', await connectionDetailsResponse.text());
+        process.exit(1);
+      }
+      
+      const connectionDetails = await connectionDetailsResponse.json();
+      console.log('Connection details retrieved successfully');
+      
+      // Use the connection URI from the API response
+      const connectionString = connectionDetails.connection_uri;
+      
+      // Update the .env files with the new connection string
+      await updateEnvFiles(connectionString);
       break;
       
     case 'migrate':
