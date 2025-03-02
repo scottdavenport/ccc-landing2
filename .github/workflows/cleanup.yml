@@ -1,0 +1,57 @@
+name: Cleanup Preview Resources
+
+on:
+  pull_request:
+    types: [closed]
+
+env:
+  NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+  NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Delete Neon branch
+        run: |
+          # Extract PR number from GITHUB_REF
+          PR_NUMBER=$(echo $GITHUB_REF | sed -n 's/refs\/pull\/\([0-9]*\)\/merge/\1/p')
+          if [ -z "$PR_NUMBER" ]; then
+            PR_NUMBER=$(echo $GITHUB_REF | sed -n 's/refs\/pull\/\([0-9]*\)\/head/\1/p')
+          fi
+          
+          BRANCH_NAME="preview-pr-${PR_NUMBER}"
+          
+          # Delete the Neon branch
+          node scripts/db-migration-manager.js delete-branch $BRANCH_NAME
+          
+          echo "Deleted Neon branch: $BRANCH_NAME"
+
+      - name: Comment on PR
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.issue.number;
+            const branchName = `preview-pr-${prNumber}`;
+            
+            github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🧹 Cleanup completed! 
+              
+              The Neon database branch \`${branchName}\` has been deleted.`
+            }) 

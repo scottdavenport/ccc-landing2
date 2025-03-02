@@ -260,3 +260,79 @@ The project includes several scripts for managing Cloudinary images:
 - `scripts/verify-sponsor-images.js`: Verifies that all sponsor images are correctly stored in the `sponsors` folder.
 - `scripts/list-all-cloudinary-assets.js`: Lists all assets in Cloudinary.
 - `scripts/check-cloudinary-folders.js`: Checks the folder structure in Cloudinary.
+
+## Database Migration Strategy
+
+This project uses Neon database branching for isolated development and testing environments. The migration strategy ensures that database schema changes can be safely developed, tested, and deployed without affecting the production database.
+
+### Setup Requirements
+
+1. Create a Neon account and project at [neon.tech](https://neon.tech)
+2. Set up the following environment variables in your `.env.local` file:
+   ```
+   DATABASE_URL="postgresql://user:password@host/database"
+   MAIN_DATABASE_URL="postgresql://user:password@host/database"
+   DEVELOPMENT_DATABASE_URL="postgresql://user:password@host/database"
+   NEON_API_KEY="your-neon-api-key"
+   NEON_PROJECT_ID="your-neon-project-id"
+   ```
+3. Add these same environment variables to your Vercel project and GitHub repository secrets
+
+### Local Development
+
+For local development, you can use the following npm scripts:
+
+```bash
+# Create a new branch from main
+npm run db:branch:create main your-branch-name
+
+# List all branches
+npm run db:branch:list
+
+# Run migrations on the current branch
+npm run db:migrate
+
+# Delete a branch
+npm run db:branch:delete your-branch-name
+```
+
+### CI/CD Workflow
+
+The project includes GitHub Actions workflows for automated database management:
+
+1. **Preview Deployments** (PR opened/updated):
+   - Creates a new Neon branch for the PR
+   - Runs migrations on the branch
+   - Deploys to Vercel preview environment
+   - Comments on the PR with deployment details
+
+2. **Production Deployments** (push to main):
+   - Runs migrations on the main branch
+   - Deploys to Vercel production environment
+
+3. **Cleanup** (PR closed):
+   - Deletes the Neon branch associated with the PR
+   - Comments on the PR confirming cleanup
+
+### Migration Management
+
+Database migrations are managed using Prisma. To create a new migration:
+
+```bash
+# Create a new migration after updating your schema
+npx prisma migrate dev --name your-migration-name
+
+# Apply migrations to your current branch
+npm run db:migrate
+```
+
+### Troubleshooting
+
+If you encounter issues with database connections:
+
+1. Verify your environment variables are correctly set
+2. Check that your Neon project is active
+3. Ensure you have the correct permissions for the API key
+4. Run `npm run db:branch:list` to verify your branch exists
+
+For more detailed information, refer to the [Neon documentation](https://neon.tech/docs) and [Prisma documentation](https://www.prisma.io/docs).

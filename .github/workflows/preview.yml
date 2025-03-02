@@ -1,0 +1,88 @@
+name: Preview Deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+  NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create Neon branch
+        id: create-branch
+        run: |
+          # Extract PR number from GITHUB_REF
+          PR_NUMBER=$(echo $GITHUB_REF | sed -n 's/refs\/pull\/\([0-9]*\)\/merge/\1/p')
+          BRANCH_NAME="preview-pr-${PR_NUMBER}"
+          
+          # Create a new branch in Neon
+          node scripts/db-migration-manager.js create-branch main $BRANCH_NAME
+          
+          # Get the connection string from .env.local
+          DB_URL=$(grep DATABASE_URL .env.local | cut -d '"' -f 2)
+          
+          # Set output for later steps
+          echo "database_url=$DB_URL" >> $GITHUB_OUTPUT
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Run migrations
+        run: |
+          # Run Prisma migrations on the new branch
+          node scripts/db-migration-manager.js migrate
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Set DATABASE_URL in Vercel
+        run: |
+          vercel env add DATABASE_URL ${{ steps.create-branch.outputs.database_url }} preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy Preview to Vercel
+        id: deploy
+        run: |
+          DEPLOYMENT_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "deployment_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+
+      - name: Comment on PR
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const deploymentUrl = '${{ steps.deploy.outputs.deployment_url }}';
+            const branchName = '${{ steps.create-branch.outputs.branch_name }}';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 Preview deployment is ready! 
+              
+              - Deployment URL: ${deploymentUrl}
+              - Neon Database Branch: ${branchName}
+              
+              This preview has its own isolated database branch. Any schema changes or data modifications will not affect the main database.`
+            }) 

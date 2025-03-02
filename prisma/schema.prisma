@@ -1,0 +1,51 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["api"]
+}
+
+model SponsorLevel {
+  @@map("sponsor_levels")
+  @@schema("api")
+
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  amount    Decimal?  @db.Decimal
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  sponsors  Sponsor[]
+}
+
+model Sponsor {
+  @@map("sponsors")
+  @@schema("api")
+
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String
+  level             String       @db.Uuid
+  year              Int
+  cloudinaryPublicId String?     @map("cloudinary_public_id")
+  imageUrl          String?      @map("image_url")
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime     @default(now()) @map("updated_at") @db.Timestamptz
+  sponsorLevel      SponsorLevel @relation(fields: [level], references: [id], onDelete: Cascade)
+}
+
+model User {
+  @@map("users")
+  @@schema("api")
+
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+} 
