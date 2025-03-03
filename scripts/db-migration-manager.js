@@ -88,36 +88,15 @@ async function getConnectionDetails(branchId) {
   console.log(`Getting connection details for branch ID: ${branchId}`);
   
   try {
-    // Get the endpoints for the branch
-    const endpointsResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchId}/endpoints`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${NEON_API_KEY}`
-      }
-    });
-    
-    if (!endpointsResponse.ok) {
-      throw new Error(`Failed to get branch endpoints: ${endpointsResponse.statusText}`);
-    }
-    
-    const endpointsData = await endpointsResponse.json();
-    console.log('Branch endpoints retrieved successfully');
-    
-    if (!endpointsData.endpoints || endpointsData.endpoints.length === 0) {
-      throw new Error('No endpoints found for this branch');
-    }
-    
     // Implement retry logic for endpoints
     let retries = 0;
-    const maxRetries = 3;
-    const retryDelay = 10000; // 10 seconds
+    const maxRetries = 6; // Increased from 3 to 6
+    const retryDelay = 20000; // Increased from 10 to 20 seconds
     
-    while (endpointsData.endpoints.length === 0 && retries < maxRetries) {
-      console.log(`No endpoints found, retrying in ${retryDelay/1000} seconds... (${retries + 1}/${maxRetries})`);
-      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    while (retries < maxRetries) {
+      console.log(`Attempt ${retries + 1}/${maxRetries} to get endpoints...`);
       
-      const retryResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchId}/endpoints`, {
+      const endpointsResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchId}/endpoints`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -125,24 +104,37 @@ async function getConnectionDetails(branchId) {
         }
       });
       
-      if (retryResponse.ok) {
-        const retryData = await retryResponse.json();
-        if (retryData.endpoints && retryData.endpoints.length > 0) {
-          console.log('Endpoints found on retry!');
-          return {
-            id: branchId,
-            endpoints: retryData.endpoints
-          };
+      if (!endpointsResponse.ok) {
+        console.error(`Failed to get branch endpoints (Attempt ${retries + 1}): ${endpointsResponse.statusText}`);
+        retries++;
+        if (retries < maxRetries) {
+          console.log(`Retrying in ${retryDelay/1000} seconds...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          continue;
         }
+        throw new Error(`Failed to get branch endpoints after ${maxRetries} attempts`);
       }
       
-      retries++;
+      const endpointsData = await endpointsResponse.json();
+      console.log('Branch endpoints retrieved successfully');
+      
+      if (!endpointsData.endpoints || endpointsData.endpoints.length === 0) {
+        console.log(`No endpoints found (Attempt ${retries + 1}), waiting ${retryDelay/1000} seconds before retry...`);
+        retries++;
+        if (retries < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          continue;
+        }
+        throw new Error(`No endpoints found for this branch after ${maxRetries} attempts`);
+      }
+      
+      return {
+        id: branchId,
+        endpoints: endpointsData.endpoints
+      };
     }
     
-    return {
-      id: branchId,
-      endpoints: endpointsData.endpoints
-    };
+    throw new Error(`Failed to get endpoints after ${maxRetries} attempts`);
   } catch (error) {
     console.error('Error getting connection details:', error.message);
     throw error;
