@@ -42,12 +42,16 @@ export const theme = createTheme({
           backgroundColor: 'transparent',
           '& .MuiDataGrid-cell': {
             borderBottom: '1px solid #e5e7eb',
+            display: 'flex',
+            alignItems: 'center',
           },
           '& .MuiDataGrid-cell:focus': {
             outline: 'none',
           },
           '& .MuiDataGrid-columnHeader': {
             backgroundColor: '#F1F5F9', // Tailwind slate-100
+            display: 'flex',
+            alignItems: 'center',
           },
           '& .MuiDataGrid-columnHeader:focus': {
             outline: 'none',

@@ -83,6 +83,105 @@ async function createNeonBranch(branchName, parentId) {
   }
 }
 
+// Get connection details for a branch
+async function getConnectionDetails(branchId) {
+  console.log(`Getting connection details for branch ID: ${branchId}`);
+  
+  try {
+    // Implement retry logic for endpoints
+    let retries = 0;
+    const maxRetries = 6; // Increased from 3 to 6
+    const retryDelay = 20000; // Increased from 10 to 20 seconds
+    
+    while (retries < maxRetries) {
+      console.log(`Attempt ${retries + 1}/${maxRetries} to get endpoints...`);
+      
+      const endpointsResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${branchId}/endpoints`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${NEON_API_KEY}`
+        }
+      });
+      
+      if (!endpointsResponse.ok) {
+        console.error(`Failed to get branch endpoints (Attempt ${retries + 1}): ${endpointsResponse.statusText}`);
+        retries++;
+        if (retries < maxRetries) {
+          console.log(`Retrying in ${retryDelay/1000} seconds...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          continue;
+        }
+        throw new Error(`Failed to get branch endpoints after ${maxRetries} attempts`);
+      }
+      
+      const endpointsData = await endpointsResponse.json();
+      console.log('Branch endpoints response:', JSON.stringify(endpointsData, null, 2));
+      
+      if (!endpointsData.endpoints || endpointsData.endpoints.length === 0) {
+        console.log(`No endpoints found (Attempt ${retries + 1}), checking if we need to create one...`);
+        
+        // Try to create an endpoint if none exists
+        try {
+          console.log('Creating new endpoint for the branch...');
+          const createEndpointResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/endpoints`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${NEON_API_KEY}`
+            },
+            body: JSON.stringify({
+              endpoint: {
+                branch_id: branchId,
+                type: 'read_write'
+              }
+            })
+          });
+
+          if (!createEndpointResponse.ok) {
+            const errorData = await createEndpointResponse.json();
+            console.error('Failed to create endpoint:', JSON.stringify(errorData, null, 2));
+            retries++;
+            if (retries < maxRetries) {
+              console.log(`Waiting ${retryDelay/1000} seconds before retrying...`);
+              await new Promise(resolve => setTimeout(resolve, retryDelay));
+              continue;
+            }
+            throw new Error(`Failed to create endpoint after ${maxRetries} attempts`);
+          }
+
+          const createEndpointData = await createEndpointResponse.json();
+          console.log('Successfully created new endpoint:', JSON.stringify(createEndpointData, null, 2));
+          
+          // Use the newly created endpoint
+          endpointsData = {
+            endpoints: [createEndpointData.endpoint]
+          };
+          break;
+        } catch (createError) {
+          console.error('Error creating endpoint:', createError.message);
+          retries++;
+          if (retries < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            continue;
+          }
+          throw createError;
+        }
+      }
+      
+      return {
+        id: branchId,
+        endpoints: endpointsData.endpoints
+      };
+    }
+    
+    throw new Error(`Failed to get endpoints after ${maxRetries} attempts`);
+  } catch (error) {
+    console.error('Error getting connection details:', error.message);
+    throw error;
+  }
+}
+
 // List branches in Neon project
 async function listNeonBranches() {
   if (!NEON_API_KEY) {
@@ -296,91 +395,170 @@ async function main() {
         
         // Get the connection details from the Neon API
         try {
-          // Get the endpoints for the branch to find the compute endpoint ID
-          const endpointsResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${existingBranch.id}/endpoints`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${NEON_API_KEY}`
+          // Get the endpoints for the branch with retry logic
+          let retries = 0;
+          const maxRetries = 6;
+          const retryDelay = 20000; // 20 seconds
+          
+          let endpointsData;
+          while (retries < maxRetries) {
+            console.log(`Attempt ${retries + 1}/${maxRetries} to get endpoints...`);
+            
+            const endpointsResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${existingBranch.id}/endpoints`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${NEON_API_KEY}`
+              }
+            });
+            
+            if (!endpointsResponse.ok) {
+              console.error(`Failed to get branch endpoints (Attempt ${retries + 1}): ${endpointsResponse.statusText}`);
+              retries++;
+              if (retries < maxRetries) {
+                console.log(`Retrying in ${retryDelay/1000} seconds...`);
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+                continue;
+              }
+              throw new Error(`Failed to get branch endpoints after ${maxRetries} attempts`);
             }
-          });
-          
-          if (!endpointsResponse.ok) {
-            throw new Error(`Failed to get branch endpoints: ${endpointsResponse.statusText}`);
+            
+            endpointsData = await endpointsResponse.json();
+            console.log('Branch endpoints response:', JSON.stringify(endpointsData, null, 2));
+            
+            if (!endpointsData.endpoints || endpointsData.endpoints.length === 0) {
+              console.log(`No endpoints found (Attempt ${retries + 1}), checking if we need to create one...`);
+              
+              // Try to create an endpoint if none exists
+              try {
+                console.log('Creating new endpoint for the branch...');
+                const createEndpointResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/endpoints`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${NEON_API_KEY}`
+                  },
+                  body: JSON.stringify({
+                    endpoint: {
+                      branch_id: existingBranch.id,
+                      type: 'read_write'
+                    }
+                  })
+                });
+
+                if (!createEndpointResponse.ok) {
+                  const errorData = await createEndpointResponse.json();
+                  console.error('Failed to create endpoint:', JSON.stringify(errorData, null, 2));
+                  retries++;
+                  if (retries < maxRetries) {
+                    console.log(`Waiting ${retryDelay/1000} seconds before retrying...`);
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
+                    continue;
+                  }
+                  throw new Error(`Failed to create endpoint after ${maxRetries} attempts`);
+                }
+
+                const createEndpointData = await createEndpointResponse.json();
+                console.log('Successfully created new endpoint:', JSON.stringify(createEndpointData, null, 2));
+                
+                // Use the newly created endpoint
+                endpointsData = {
+                  endpoints: [createEndpointData.endpoint]
+                };
+                break;
+              } catch (createError) {
+                console.error('Error creating endpoint:', createError.message);
+                retries++;
+                if (retries < maxRetries) {
+                  await new Promise(resolve => setTimeout(resolve, retryDelay));
+                  continue;
+                }
+                throw createError;
+              }
+            }
+            
+            break; // Success! Exit the retry loop
           }
           
-          const endpointsData = await endpointsResponse.json();
-          console.log('Branch endpoints retrieved successfully');
-          
-          if (!endpointsData.endpoints || endpointsData.endpoints.length === 0) {
-            throw new Error('No endpoints found for this branch');
+          if (!endpointsData || !endpointsData.endpoints || endpointsData.endpoints.length === 0) {
+            throw new Error(`Failed to get endpoints after ${maxRetries} attempts`);
           }
           
-          // Get the first endpoint ID
+          // Get the first endpoint ID and host
           const endpointId = endpointsData.endpoints[0].id;
+          const host = endpointsData.endpoints[0].host;
           
-          // Get the databases for the branch
-          const databasesResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${existingBranch.id}/databases`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${NEON_API_KEY}`
+          // Get the databases for the branch with retry logic
+          const databasesData = await retryApiCall(async () => {
+            console.log('Getting databases for the branch...');
+            const databasesResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${existingBranch.id}/databases`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${NEON_API_KEY}`
+              }
+            });
+            
+            if (!databasesResponse.ok) {
+              throw new Error(`Failed to get branch databases: ${databasesResponse.statusText}`);
             }
-          });
-          
-          if (!databasesResponse.ok) {
-            throw new Error(`Failed to get branch databases: ${databasesResponse.statusText}`);
-          }
-          
-          const databasesData = await databasesResponse.json();
-          
-          if (!databasesData.databases || databasesData.databases.length === 0) {
-            throw new Error('No databases found for this branch');
-          }
+            
+            const data = await databasesResponse.json();
+            if (!data.databases || data.databases.length === 0) {
+              throw new Error('No databases found for this branch');
+            }
+            
+            return data;
+          }, maxRetries, retryDelay);
           
           // Get the first database name
           const databaseName = databasesData.databases[0].name;
           
-          // Get the roles for the branch
-          const rolesResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${existingBranch.id}/roles`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${NEON_API_KEY}`
+          // Get the roles for the branch with retry logic
+          const rolesData = await retryApiCall(async () => {
+            console.log('Getting roles for the branch...');
+            const rolesResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${existingBranch.id}/roles`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${NEON_API_KEY}`
+              }
+            });
+            
+            if (!rolesResponse.ok) {
+              throw new Error(`Failed to get branch roles: ${rolesResponse.statusText}`);
             }
-          });
-          
-          if (!rolesResponse.ok) {
-            throw new Error(`Failed to get branch roles: ${rolesResponse.statusText}`);
-          }
-          
-          const rolesData = await rolesResponse.json();
-          
-          if (!rolesData.roles || rolesData.roles.length === 0) {
-            throw new Error('No roles found for this branch');
-          }
+            
+            const data = await rolesResponse.json();
+            if (!data.roles || data.roles.length === 0) {
+              throw new Error('No roles found for this branch');
+            }
+            
+            return data;
+          }, maxRetries, retryDelay);
           
           // Get the first role name
           const roleName = rolesData.roles[0].name;
           
-          // Get the role password
-          const passwordResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${existingBranch.id}/roles/${roleName}/reveal_password`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${NEON_API_KEY}`
+          // Get the role password with retry logic
+          const passwordData = await retryApiCall(async () => {
+            console.log('Getting role password...');
+            const passwordResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/branches/${existingBranch.id}/roles/${roleName}/reveal_password`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${NEON_API_KEY}`
+              }
+            });
+            
+            if (!passwordResponse.ok) {
+              throw new Error(`Failed to get role password: ${passwordResponse.statusText}`);
             }
-          });
+            
+            return await passwordResponse.json();
+          }, maxRetries, retryDelay);
           
-          if (!passwordResponse.ok) {
-            throw new Error(`Failed to get role password: ${passwordResponse.statusText}`);
-          }
-          
-          const passwordData = await passwordResponse.json();
           const password = passwordData.password;
-          
-          // Get the endpoint host
-          const host = endpointsData.endpoints[0].host;
           
           // Construct the connection string
           const connectionString = `postgresql://${roleName}:${password}@${host}/${databaseName}`;
