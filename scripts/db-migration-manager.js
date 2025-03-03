@@ -116,16 +116,57 @@ async function getConnectionDetails(branchId) {
       }
       
       const endpointsData = await endpointsResponse.json();
-      console.log('Branch endpoints retrieved successfully');
+      console.log('Branch endpoints response:', JSON.stringify(endpointsData, null, 2));
       
       if (!endpointsData.endpoints || endpointsData.endpoints.length === 0) {
-        console.log(`No endpoints found (Attempt ${retries + 1}), waiting ${retryDelay/1000} seconds before retry...`);
-        retries++;
-        if (retries < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
-          continue;
+        console.log(`No endpoints found (Attempt ${retries + 1}), checking if we need to create one...`);
+        
+        // Try to create an endpoint if none exists
+        try {
+          console.log('Creating new endpoint for the branch...');
+          const createEndpointResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/endpoints`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${NEON_API_KEY}`
+            },
+            body: JSON.stringify({
+              endpoint: {
+                branch_id: branchId,
+                type: 'read_write'
+              }
+            })
+          });
+
+          if (!createEndpointResponse.ok) {
+            const errorData = await createEndpointResponse.json();
+            console.error('Failed to create endpoint:', JSON.stringify(errorData, null, 2));
+            retries++;
+            if (retries < maxRetries) {
+              console.log(`Waiting ${retryDelay/1000} seconds before retrying...`);
+              await new Promise(resolve => setTimeout(resolve, retryDelay));
+              continue;
+            }
+            throw new Error(`Failed to create endpoint after ${maxRetries} attempts`);
+          }
+
+          const createEndpointData = await createEndpointResponse.json();
+          console.log('Successfully created new endpoint:', JSON.stringify(createEndpointData, null, 2));
+          
+          // Use the newly created endpoint
+          endpointsData = {
+            endpoints: [createEndpointData.endpoint]
+          };
+          break;
+        } catch (createError) {
+          console.error('Error creating endpoint:', createError.message);
+          retries++;
+          if (retries < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            continue;
+          }
+          throw createError;
         }
-        throw new Error(`No endpoints found for this branch after ${maxRetries} attempts`);
       }
       
       return {
@@ -383,16 +424,57 @@ async function main() {
             }
             
             endpointsData = await endpointsResponse.json();
-            console.log('Branch endpoints retrieved successfully');
+            console.log('Branch endpoints response:', JSON.stringify(endpointsData, null, 2));
             
             if (!endpointsData.endpoints || endpointsData.endpoints.length === 0) {
-              console.log(`No endpoints found (Attempt ${retries + 1}), waiting ${retryDelay/1000} seconds before retry...`);
-              retries++;
-              if (retries < maxRetries) {
-                await new Promise(resolve => setTimeout(resolve, retryDelay));
-                continue;
+              console.log(`No endpoints found (Attempt ${retries + 1}), checking if we need to create one...`);
+              
+              // Try to create an endpoint if none exists
+              try {
+                console.log('Creating new endpoint for the branch...');
+                const createEndpointResponse = await fetch(`${NEON_API_URL}/projects/${NEON_PROJECT_ID}/endpoints`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${NEON_API_KEY}`
+                  },
+                  body: JSON.stringify({
+                    endpoint: {
+                      branch_id: existingBranch.id,
+                      type: 'read_write'
+                    }
+                  })
+                });
+
+                if (!createEndpointResponse.ok) {
+                  const errorData = await createEndpointResponse.json();
+                  console.error('Failed to create endpoint:', JSON.stringify(errorData, null, 2));
+                  retries++;
+                  if (retries < maxRetries) {
+                    console.log(`Waiting ${retryDelay/1000} seconds before retrying...`);
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
+                    continue;
+                  }
+                  throw new Error(`Failed to create endpoint after ${maxRetries} attempts`);
+                }
+
+                const createEndpointData = await createEndpointResponse.json();
+                console.log('Successfully created new endpoint:', JSON.stringify(createEndpointData, null, 2));
+                
+                // Use the newly created endpoint
+                endpointsData = {
+                  endpoints: [createEndpointData.endpoint]
+                };
+                break;
+              } catch (createError) {
+                console.error('Error creating endpoint:', createError.message);
+                retries++;
+                if (retries < maxRetries) {
+                  await new Promise(resolve => setTimeout(resolve, retryDelay));
+                  continue;
+                }
+                throw createError;
               }
-              throw new Error(`No endpoints found for this branch after ${maxRetries} attempts`);
             }
             
             break; // Success! Exit the retry loop
