@@ -34,6 +34,7 @@ model Sponsor {
   year              Int
   cloudinaryPublicId String?     @map("cloudinary_public_id")
   imageUrl          String?      @map("image_url")
+  websiteUrl        String?      @map("website_url")
   createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz
   updatedAt         DateTime     @default(now()) @map("updated_at") @db.Timestamptz
   sponsorLevel      SponsorLevel @relation(fields: [level], references: [id], onDelete: Cascade)
