@@ -200,7 +200,7 @@ export default function SponsorCarousel() {
                         >
                           {sponsor.cloudinary_public_id ? (
                             <CldImage
-                              src={sponsor.cloudinary_public_id}
+                              src={`sponsors/${sponsor.cloudinary_public_id}`}
                               alt={`${sponsor.name} logo`}
                               fill
                               className="object-contain bg-white rounded-lg p-4 transition-all duration-300 group-hover:scale-105"
