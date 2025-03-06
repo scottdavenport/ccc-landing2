@@ -9,7 +9,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
+import { CldImage } from 'next-cloudinary';
 import { DataGrid, GridColDef, GridRowSelectionModel, GridCellParams } from '@mui/x-data-grid';
 import { Plus, Trash2, Upload } from 'lucide-react';
 
@@ -259,7 +259,7 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
         const sponsor = params.row;
         return (
           <div className="flex items-center justify-center w-full h-full py-2">
-            {sponsor.image_url ? (
+            {sponsor.cloudinary_public_id ? (
               <div
                 className="relative w-12 h-12 hover:scale-110 transition-transform cursor-pointer group"
                 onClick={() => handleUploadClick(sponsor.id)}
@@ -267,12 +267,12 @@ export default function SponsorsTable({ onAddSponsor, onEditSponsor }: SponsorsT
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-lg flex items-center justify-center">
                   <Upload className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
                 </div>
-                <Image
-                  src={sponsor.image_url}
+                <CldImage
+                  src={`sponsors/${sponsor.cloudinary_public_id}`}
                   alt={`${sponsor.name} logo`}
                   fill
                   className="object-contain"
-                  sizes="(max-width: 48px) 100vw, 48px"
+                  sizes="48px"
                 />
               </div>
             ) : (

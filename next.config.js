@@ -8,6 +8,8 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
+    loader: 'custom',
+    loaderFile: './lib/cloudinary-loader.js',
   },
   webpack: (config, { isServer }) => {
     // Use the improved server client in production
