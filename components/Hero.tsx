@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 import { Navigation } from './Navigation';
 
@@ -86,10 +87,13 @@ export const Hero = () => {
         <div className="flex flex-col items-center justify-center space-y-16 max-w-5xl mx-auto">
           {/* Animated logo */}
           <motion.div {...animations.logo} className="w-full max-w-lg mx-auto">
-            <img
+            <Image
               src="/ccc-logo.svg"
               alt="Craven Cancer Classic Logo"
-              className="w-full h-auto filter drop-shadow-2xl" // Add a nice shadow
+              width={600}
+              height={200}
+              className="w-full h-auto filter drop-shadow-2xl"
+              priority
             />
           </motion.div>
 
