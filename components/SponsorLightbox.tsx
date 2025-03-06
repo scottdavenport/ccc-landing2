@@ -64,7 +64,7 @@ export function SponsorLightbox({ isOpen, onClose, sponsor }: SponsorLightboxPro
                     <div className="relative aspect-square bg-gray-50 rounded-xl overflow-hidden">
                       {sponsor.cloudinary_public_id ? (
                         <CldImage
-                          src={sponsor.cloudinary_public_id}
+                          src={`sponsors/${sponsor.cloudinary_public_id}`}
                           alt={`${sponsor.name} logo`}
                           fill
                           className="object-contain p-8"
