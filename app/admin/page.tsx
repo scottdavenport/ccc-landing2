@@ -12,7 +12,7 @@ export default function AdminPage() {
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Dashboard</h2>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Welcome to the CCC administration dashboard. Here's what's happening today.
+            Welcome to the CCC administration dashboard. Here&apos;s what&apos;s happening today.
           </p>
         </div>
         <Button className="inline-flex items-center gap-x-2 self-start sm:self-center">
