@@ -8,6 +8,29 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { adminNavItems } from '@/lib/constants/admin-nav';
 
+/**
+ * AdminSidebar component provides navigation for the admin section
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * // In your admin layout
+ * export default function AdminLayout({ children }: { children: React.ReactNode }) {
+ *   return (
+ *     <div>
+ *       <AdminSidebar />
+ *       {children}
+ *     </div>
+ *   );
+ * }
+ * ```
+ * 
+ * Features:
+ * - Responsive design with mobile toggle
+ * - Active state highlighting
+ * - Smooth transitions
+ * - Accessible navigation
+ */
 export function AdminSidebar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const pathname = usePathname();
