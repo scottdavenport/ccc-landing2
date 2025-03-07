@@ -86,14 +86,15 @@ export const Hero = () => {
       <div className="container relative z-10 mx-auto px-4 py-20">
         <div className="flex flex-col items-center justify-center space-y-16 max-w-5xl mx-auto">
           {/* Animated logo */}
-          <motion.div {...animations.logo} className="w-full max-w-lg mx-auto">
+          <motion.div {...animations.logo} className="w-full max-w-lg mx-auto relative">
             <Image
               src="/ccc-logo.svg"
               alt="Craven Cancer Classic Logo"
-              width={600}
-              height={200}
+              width={1000}
+              height={357}
               className="w-full h-auto filter drop-shadow-2xl"
               priority
+              style={{ objectFit: 'contain' }}
             />
           </motion.div>
 
