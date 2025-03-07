@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { AddSponsorDialog } from '@/components/admin/AddSponsorDialog';
 import { SponsorWithLevel } from '@/types/sponsors';
 
+export const dynamic = 'force-dynamic';
+
 export default function AdminSponsorsPage() {
   const [isAddSponsorOpen, setIsAddSponsorOpen] = useState(false);
   const [selectedSponsor, setSelectedSponsor] = useState<SponsorWithLevel | null>(null);

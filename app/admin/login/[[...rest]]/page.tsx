@@ -2,6 +2,8 @@
 
 import { SignIn } from '@clerk/nextjs';
 
+export const dynamic = 'force-dynamic';
+
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-ccc-teal py-12 px-4 sm:px-6 lg:px-8">

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@/lib/neon/improved-server-client';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const { sql: sqlQuery, params } = await request.json();

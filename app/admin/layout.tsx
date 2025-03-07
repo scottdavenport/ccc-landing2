@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'CCC Admin',
   description: 'Admin dashboard for CCC',

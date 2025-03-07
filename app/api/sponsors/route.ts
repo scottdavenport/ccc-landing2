@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 import { sql } from '@/lib/neon/improved-server-client';
 
+export const dynamic = 'force-dynamic';
+
 // Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { checkConnection } from '@/lib/neon/improved-server-client';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const isConnected = await checkConnection();
