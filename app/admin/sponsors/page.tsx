@@ -1,32 +1,52 @@
 'use client';
 
 import { useState } from 'react';
+import { Plus } from 'lucide-react';
 
-import { SponsorForm } from '@/components/admin/SponsorForm';
+import { default as SponsorsTable } from '@/components/admin/SponsorsTable';
+import { Button } from '@/components/ui/button';
+import { AddSponsorDialog } from '@/components/admin/AddSponsorDialog';
+import { SponsorWithLevel } from '@/types/sponsors';
 
 export default function AdminSponsorsPage() {
-  const [showForm, setShowForm] = useState(false);
+  const [isAddSponsorOpen, setIsAddSponsorOpen] = useState(false);
+  const [selectedSponsor, setSelectedSponsor] = useState<SponsorWithLevel | null>(null);
+
+  const handleEditSponsor = (sponsor: SponsorWithLevel) => {
+    setSelectedSponsor(sponsor);
+    setIsAddSponsorOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsAddSponsorOpen(false);
+    setSelectedSponsor(null);
+  };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="mb-6 text-2xl font-bold">Sponsor Management</h1>
-      <div className="mb-4">
-        <button
-          onClick={() => setShowForm(true)}
-          className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-        >
-          Add New Sponsor
-        </button>
-      </div>
-
-      {showForm && (
-        <div className="mb-8">
-          <h2 className="mb-4 text-xl font-semibold">Add New Sponsor</h2>
-          <SponsorForm onSuccess={() => setShowForm(false)} />
+    <div className="space-y-6">
+      <div className="bg-white/80 backdrop-blur-sm shadow rounded-lg p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-medium text-gray-900">Sponsors</h2>
+          <Button onClick={() => setIsAddSponsorOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Sponsor
+          </Button>
         </div>
-      )}
-
-      <div className="sponsors-list">{/* Sponsor list will be implemented here */}</div>
+        <SponsorsTable 
+          onAddSponsor={() => setIsAddSponsorOpen(true)} 
+          onEditSponsor={handleEditSponsor}
+        />
+      </div>
+      
+      <AddSponsorDialog
+        isOpen={isAddSponsorOpen}
+        onClose={handleCloseDialog}
+        sponsorToEdit={selectedSponsor}
+        onSponsorAdded={() => {
+          // Refresh the page data when a sponsor is added or edited
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }
