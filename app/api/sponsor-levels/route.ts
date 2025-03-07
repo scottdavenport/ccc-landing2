@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@/lib/neon/improved-server-client';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const data = await sql`SELECT * FROM api.sponsor_levels`;

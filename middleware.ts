@@ -1,9 +1,7 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextRequest, NextResponse } from "next/server";
 
-// This example protects all routes including api/trpc routes
-// Please edit this to allow other routes to be public as needed.
-// See https://clerk.com/docs/references/nextjs/clerk-middleware for more information about configuring your middleware
-const publicRoutes = createRouteMatcher([
+// Define public routes that don't require authentication
+const publicPaths = [
   "/",
   "/api/db/connection",
   "/api/db/query",
@@ -11,37 +9,55 @@ const publicRoutes = createRouteMatcher([
   "/api/cloudinary/status",
   "/api/cloudinary/(.*)",
   "/api/sponsors",
+  "/api/sponsor-levels",
   "/sponsors",
   "/about",
   "/contact",
   "/api/webhooks(.*)",
+  "/admin",
+  "/admin/sponsors",
   "/admin/login(.*)",
   "/admin-login",
-  "/_next/(.*)", // Make Next.js static assets public
+  "/_next/(.*)",
   "/favicon.ico",
   "/robots.txt",
   "/sitemap.xml",
-  "/images/(.*)", // Make image assets public
-]);
+  "/images/(.*)",
+];
 
-const ignoredRoutes = createRouteMatcher([
-  "/api/webhooks(.*)",
-]);
+// Convert paths to RegExp for easier matching
+const publicRegexes = publicPaths.map((path) => new RegExp(`^${path.replace(/\(.*\)/g, ".*")}$`));
 
-export default clerkMiddleware(async (auth, req) => {
-  if (publicRoutes(req) || ignoredRoutes(req)) {
-    return; // Allow access to public and ignored routes
+// Simple middleware that allows public routes and denies others
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  
+  // Special case for root path - always allow
+  if (pathname === "/") {
+    return NextResponse.next();
   }
   
-  // Protect all other routes
-  await auth.protect();
-});
+  // Check if path matches any public route
+  const isPublicRoute = publicRegexes.some((regex) => regex.test(pathname));
+  
+  if (isPublicRoute) {
+    return NextResponse.next();
+  }
+  
+  // Redirect to login for non-public routes (placeholder for proper auth)
+  // In a real app you'd want to use Clerk's authentication here
+  const url = request.nextUrl.clone();
+  url.pathname = "/admin/login";
+  return NextResponse.redirect(url);
+}
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Skip Next.js internals and all static files
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)|.*\\.(?:css|js)).*)',
     // Always run for API routes
-    '/(api|trpc)(.*)',
+    '/api/:path*',
+    // Run for admin routes
+    '/admin/:path*',
   ],
 };

@@ -9,8 +9,10 @@ import { Hero } from '@/components/Hero'; // The big welcome banner at the top
 import { PastWinners } from '@/components/PastWinners'; // Shows previous tournament winners
 import SponsorCarousel from '@/components/SponsorCarousel'; // Shows all our helpful sponsors in a beautiful carousel
 
+export const dynamic = 'force-dynamic';
+
 // This is our main page - it's like putting all our LEGO pieces together
-const Index = () => {
+export default function HomePage() {
   return (
     // main is like a big box that holds everything
     // min-h-screen means it will be at least as tall as your screen
@@ -31,7 +33,4 @@ const Index = () => {
       </ErrorBoundary>
     </main>
   );
-};
-
-// We need to share this page with the rest of our app
-export default Index;
+}
