@@ -8,6 +8,8 @@ const publicRoutes = createRouteMatcher([
   "/api/db/connection",
   "/api/db/query",
   "/api/cloudinary/connection",
+  "/api/cloudinary/status",
+  "/api/cloudinary/(.*)",
   "/api/sponsors",
   "/sponsors",
   "/about",
