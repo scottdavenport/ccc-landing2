@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
 
 // Define public routes that don't require authentication
 const publicPaths = [
@@ -14,10 +15,7 @@ const publicPaths = [
   "/about",
   "/contact",
   "/api/webhooks(.*)",
-  "/admin",
-  "/admin/sponsors",
   "/admin/login(.*)",
-  "/admin-login",
   "/_next/(.*)",
   "/favicon.ico",
   "/robots.txt",
@@ -25,31 +23,21 @@ const publicPaths = [
   "/images/(.*)",
 ];
 
-// Convert paths to RegExp for easier matching
-const publicRegexes = publicPaths.map((path) => new RegExp(`^${path.replace(/\(.*\)/g, ".*")}$`));
+// Create a matcher for admin routes that should be protected
+const isAdminRoute = createRouteMatcher(['/admin(.*)']);
 
-// Simple middleware that allows public routes and denies others
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  
-  // Special case for root path - always allow
-  if (pathname === "/") {
-    return NextResponse.next();
+// Create a matcher for public routes
+const isPublicRoute = createRouteMatcher(publicPaths);
+
+// Use the new clerkMiddleware approach
+export default clerkMiddleware(async (auth, req) => {
+  // If it's an admin route and not a login route, protect it
+  if (isAdminRoute(req) && !isPublicRoute(req)) {
+    await auth.protect();
   }
   
-  // Check if path matches any public route
-  const isPublicRoute = publicRegexes.some((regex) => regex.test(pathname));
-  
-  if (isPublicRoute) {
-    return NextResponse.next();
-  }
-  
-  // Redirect to login for non-public routes (placeholder for proper auth)
-  // In a real app you'd want to use Clerk's authentication here
-  const url = request.nextUrl.clone();
-  url.pathname = "/admin/login";
-  return NextResponse.redirect(url);
-}
+  return NextResponse.next();
+});
 
 export const config = {
   matcher: [
