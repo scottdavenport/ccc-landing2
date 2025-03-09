@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
+import { Toaster } from '@/components/ui/toaster';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="mx-auto w-full max-w-7xl">{children}</div>
         </main>
       </div>
+      <Toaster />
     </div>
   );
 }
