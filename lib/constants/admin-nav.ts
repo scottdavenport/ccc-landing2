@@ -4,6 +4,7 @@ import {
   DollarSign,
   HandHeart,
   Settings,
+  Trophy,
   type LucideIcon
 } from 'lucide-react';
 
@@ -20,6 +21,12 @@ export const adminNavItems: NavItem[] = [
     href: '/admin',
     icon: LayoutDashboard,
     description: 'Overview of tournament statistics and activities',
+  },
+  {
+    title: 'Tournament Results',
+    href: '/admin/results',
+    icon: Trophy,
+    description: 'Manage tournament results, flights, and winners',
   },
   {
     title: 'Sponsors',
