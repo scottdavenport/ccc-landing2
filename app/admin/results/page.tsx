@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
