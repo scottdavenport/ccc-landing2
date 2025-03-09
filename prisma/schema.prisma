@@ -50,4 +50,99 @@ model User {
   name      String?
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+}
+
+// Tournament Results Models
+
+model TournamentYear {
+  @@map("tournament_years")
+  @@schema("api")
+
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  year          Int           @unique
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime      @default(now()) @map("updated_at") @db.Timestamptz
+  flights       Flight[]
+  contests      Contest[]
+}
+
+model Flight {
+  @@map("flights")
+  @@schema("api")
+
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tournamentYearId String        @map("tournament_year_id") @db.Uuid
+  name             String
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime      @default(now()) @map("updated_at") @db.Timestamptz
+  tournamentYear   TournamentYear @relation(fields: [tournamentYearId], references: [id], onDelete: Cascade)
+  teams            Team[]
+}
+
+model Team {
+  @@map("teams")
+  @@schema("api")
+
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  flightId         String        @map("flight_id") @db.Uuid
+  name             String
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime      @default(now()) @map("updated_at") @db.Timestamptz
+  flight           Flight        @relation(fields: [flightId], references: [id], onDelete: Cascade)
+  results          Result[]
+  players          Player[]
+}
+
+model Result {
+  @@map("results")
+  @@schema("api")
+
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teamId           String        @map("team_id") @db.Uuid
+  position         Int
+  score            Decimal       @db.Decimal
+  purse            Decimal?      @db.Decimal
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime      @default(now()) @map("updated_at") @db.Timestamptz
+  team             Team          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+model Player {
+  @@map("players")
+  @@schema("api")
+
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String
+  teamId           String?         @map("team_id") @db.Uuid
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime        @default(now()) @map("updated_at") @db.Timestamptz
+  team             Team?           @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  contestResults   ContestResult[]
+}
+
+model Contest {
+  @@map("contests")
+  @@schema("api")
+
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tournamentYearId String          @map("tournament_year_id") @db.Uuid
+  name             String
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime        @default(now()) @map("updated_at") @db.Timestamptz
+  tournamentYear   TournamentYear  @relation(fields: [tournamentYearId], references: [id], onDelete: Cascade)
+  contestResults   ContestResult[]
+}
+
+model ContestResult {
+  @@map("contest_results")
+  @@schema("api")
+
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contestId        String        @map("contest_id") @db.Uuid
+  playerId         String        @map("player_id") @db.Uuid
+  result           String
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime      @default(now()) @map("updated_at") @db.Timestamptz
+  contest          Contest       @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  player           Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
 } 
