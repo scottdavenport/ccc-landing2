@@ -24,9 +24,9 @@ export const GET: RequestHandler = async (request: NextRequest) => {
           f.name as flight_name,
           t.created_at,
           t.updated_at
-        FROM team t
-        JOIN flight f ON t.flight_id = f.id
-        WHERE t.flight_id = ${flightId}
+        FROM api.teams t
+        JOIN api.flights f ON t.flight_id = f.id
+        WHERE t.flight_id = ${flightId}::uuid
         ORDER BY t.name
       `;
     } else {
@@ -39,8 +39,8 @@ export const GET: RequestHandler = async (request: NextRequest) => {
           f.name as flight_name,
           t.created_at,
           t.updated_at
-        FROM team t
-        JOIN flight f ON t.flight_id = f.id
+        FROM api.teams t
+        JOIN api.flights f ON t.flight_id = f.id
         ORDER BY t.name
       `;
     }
@@ -50,7 +50,11 @@ export const GET: RequestHandler = async (request: NextRequest) => {
     return NextResponse.json(teams, { status: 200 });
   } catch (error) {
     console.error("Error fetching teams:", error);
-    return NextResponse.json({ error: "Failed to fetch teams" }, { status: 500 });
+    return NextResponse.json({
+      error: "Failed to fetch teams",
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
+    }, { status: 500 });
   }
 };
 
@@ -78,7 +82,7 @@ export const POST: RequestHandler = async (request: NextRequest) => {
 
     // Check if flight exists
     const flight = await prisma.$queryRaw<Flight[]>`
-      SELECT id FROM flight WHERE id = ${flightId}
+      SELECT id FROM api.flights WHERE id = ${flightId}::uuid
     `;
 
     if (!flight.length) {
@@ -87,8 +91,8 @@ export const POST: RequestHandler = async (request: NextRequest) => {
 
     // Create new team
     const team = await prisma.$queryRaw<Team[]>`
-      INSERT INTO team (name, flight_id, created_at, updated_at)
-      VALUES (${name}, ${flightId}, NOW(), NOW())
+      INSERT INTO api.teams (name, flight_id, created_at, updated_at)
+      VALUES (${name}, ${flightId}::uuid, NOW(), NOW())
       RETURNING id, name, flight_id, created_at, updated_at
     `;
 
@@ -96,6 +100,10 @@ export const POST: RequestHandler = async (request: NextRequest) => {
   } catch (error) {
     const dbError = error as DatabaseError;
     console.error("Error creating team:", dbError.message);
-    return NextResponse.json({ error: "Failed to create team" }, { status: 500 });
+    return NextResponse.json({
+      error: "Failed to create team",
+      message: dbError.message,
+      stack: process.env.NODE_ENV === 'development' ? (error as Error).stack : undefined
+    }, { status: 500 });
   }
 }; 
