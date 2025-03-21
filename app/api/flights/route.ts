@@ -24,8 +24,8 @@ export const GET: RequestHandler = async (request: NextRequest) => {
           ty.year as tournament_year_name,
           f.created_at,
           f.updated_at
-        FROM flight f
-        JOIN tournament_year ty ON f.tournament_year_id = ty.id
+        FROM api.flights f
+        JOIN api.tournament_years ty ON f.tournament_year_id = ty.id
         WHERE f.tournament_year_id = ${tournamentYearId}
         ORDER BY f.name
       `;
@@ -39,8 +39,8 @@ export const GET: RequestHandler = async (request: NextRequest) => {
           ty.year as tournament_year_name,
           f.created_at,
           f.updated_at
-        FROM flight f
-        JOIN tournament_year ty ON f.tournament_year_id = ty.id
+        FROM api.flights f
+        JOIN api.tournament_years ty ON f.tournament_year_id = ty.id
         ORDER BY ty.year DESC, f.name
       `;
     }
@@ -50,7 +50,11 @@ export const GET: RequestHandler = async (request: NextRequest) => {
     return NextResponse.json(flights, { status: 200 });
   } catch (error) {
     console.error("Error fetching flights:", error);
-    return NextResponse.json({ error: "Failed to fetch flights" }, { status: 500 });
+    return NextResponse.json({
+      error: "Failed to fetch flights",
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
+    }, { status: 500 });
   }
 };
 
@@ -78,7 +82,7 @@ export const POST: RequestHandler = async (request: NextRequest) => {
 
     // Check if tournament year exists
     const tournamentYear = await prisma.$queryRaw<TournamentYear[]>`
-      SELECT id FROM tournament_year WHERE id = ${tournamentYearId}
+      SELECT id FROM api.tournament_years WHERE id = ${tournamentYearId}
     `;
 
     if (!tournamentYear.length) {
@@ -87,7 +91,7 @@ export const POST: RequestHandler = async (request: NextRequest) => {
 
     // Create new flight
     const flight = await prisma.$queryRaw<Flight[]>`
-      INSERT INTO flight (name, tournament_year_id, created_at, updated_at)
+      INSERT INTO api.flights (name, tournament_year_id, created_at, updated_at)
       VALUES (${name}, ${tournamentYearId}, NOW(), NOW())
       RETURNING id, name, tournament_year_id, created_at, updated_at
     `;
@@ -96,6 +100,10 @@ export const POST: RequestHandler = async (request: NextRequest) => {
   } catch (error) {
     const dbError = error as DatabaseError;
     console.error("Error creating flight:", dbError.message);
-    return NextResponse.json({ error: "Failed to create flight" }, { status: 500 });
+    return NextResponse.json({
+      error: "Failed to create flight",
+      message: dbError.message,
+      stack: process.env.NODE_ENV === 'development' ? (error as Error).stack : undefined
+    }, { status: 500 });
   }
 }; 
