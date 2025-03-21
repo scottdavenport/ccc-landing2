@@ -2,73 +2,153 @@
 
 This document outlines the ESLint errors detected during the build process for the Tournament Results UI feature branch. These issues should be addressed as part of a future cleanup task.
 
-## Temporary Solution
+## Current Status
 
-Currently, we're using the `build:no-lint` script to bypass ESLint checks during the build process. This allows us to deploy the application without fixing all the linting errors immediately.
+The repository is currently bypassing ESLint checks during the build process to allow for deployment without fixing all linting errors immediately. While this is an acceptable temporary solution, we should plan to address these issues in a future sprint.
+
+## Temporary Solution Implementation
+
+We're using the `build:no-lint` script which temporarily modifies the `next.config.js` file:
 
 ```bash
 npm run build:no-lint
 ```
 
-This script temporarily modifies the `next.config.js` file to set `eslint.ignoreDuringBuilds` to `true`, then reverts it back to `false` after the build is complete.
+This script:
+1. Runs `scripts/disable-lint-for-build.js` to set `eslint.ignoreDuringBuilds: true` in next.config.js
+2. Runs the standard build process
+3. Runs `scripts/enable-lint-for-build.js` to revert back to `eslint.ignoreDuringBuilds: false`
 
-## ESLint Issues to Fix
+This approach has been implemented in both the preview and production GitHub Actions workflows.
 
-### API Routes: `no-explicit-any` TypeScript Errors
+## ESLint Issues Summary
 
-The following API routes contain `any` type usage that should be replaced with proper types:
+The codebase currently has **25 linting errors** and **2 warnings** across 7 files:
+- 13 TypeScript `no-explicit-any` errors
+- 12 TypeScript `no-unused-vars` errors
+- 2 React `react-hooks/exhaustive-deps` warnings
 
-#### 1. `app/api/contest-results/route.ts`
-- Lines: 100, 117, 125, 139, 153
-- Issue: Using `any` type for error handling and database responses
+## Detailed Issues & Fix Recommendations
 
-#### 2. `app/api/contests/route.ts`
-- Lines: 70, 84
-- Issue: Using `any` type for error handling
+### 1. API Routes: `no-explicit-any` TypeScript Errors
 
-#### 3. `app/api/players/route.ts`
-- Lines: 71, 91
-- Issue: Using `any` type for error handling
+TypeScript's `any` type should be avoided as it defeats the purpose of type safety. These issues are primarily in error handling.
 
-#### 4. `app/api/results/route.ts`
-- Lines: 100, 113, 134
-- Issue: Using `any` type for error handling and database responses
+#### `app/api/contest-results/route.ts` (Lines: 100, 117, 125, 139, 153)
 
-### Components: `no-unused-vars` Errors
+**Issue:** Using `any` type for error handling and database responses.
 
-Several components in the admin results UI have unused variables:
+**Recommended Fix:**
+```typescript
+// Instead of:
+} catch (error: any) {
+  return NextResponse.json({ error: error.message }, { status: 500 });
+}
 
-#### 1. `components/admin/results/ClosestToPinTab.tsx`
-- Unused variables: `isLoadingPlayers`, `isLoadingResults`, `contestFormMode`, `editingContestId`, `resultFormMode`, `editingResultId`
-- React Hook dependency issue: Add `contests` to dependencies array or remove from useEffect
+// Use:
+} catch (error: unknown) {
+  const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+  return NextResponse.json({ error: errorMessage }, { status: 500 });
+}
+```
 
-#### 2. `components/admin/results/FlightsResultsTab.tsx`
-- Unused variables: `Trash`, `isLoadingTeams`, `prepareEditFlight`
+For database responses, create proper interfaces:
+```typescript
+interface ContestResult {
+  id: string;
+  player_id: string;
+  contest_id: string;
+  // Add other fields as needed
+}
 
-#### 3. `components/admin/results/LongDrivesTab.tsx`
-- Unused variables: `isLoadingPlayers`, `isLoadingResults`, `contestFormMode`, `editingContestId`, `resultFormMode`, `editingResultId`
-- React Hook dependency issue: Add `contests` to dependencies array or remove from useEffect
+// Then use:
+const results: ContestResult[] = await db.query(...)
+```
 
-## Action Plan
+#### `app/api/contests/route.ts` (Lines: 70, 84)
+#### `app/api/players/route.ts` (Lines: 71, 91)
+#### `app/api/results/route.ts` (Lines: 100, 113, 134)
 
-1. Create a task/issue to fix these linting errors
-2. Address the issues in order of priority:
-   - First: API routes type issues
-   - Second: Component unused variables
-   - Third: React Hook dependency issues
+Apply similar fixes as above.
 
-3. For the API routes:
-   - Create proper types for error handling responses
-   - Use specific types for database responses instead of `any`
+### 2. Components: `no-unused-vars` Errors
 
-4. For the components:
-   - Remove unused imports
-   - Prefix unused variables with underscore (e.g., `_isLoadingPlayers`) or remove them
-   - Fix React Hook dependencies by adding missing dependencies or restructuring effects
+Unused variables should be removed or prefixed with underscore to indicate intentional non-use.
 
-5. Once fixes are applied, run `npm run lint` to verify all issues are resolved
-6. Update the CI workflow to use the standard `npm run build` command
+#### `components/admin/results/ClosestToPinTab.tsx` and `LongDrivesTab.tsx`
 
-## Implementation Timeline
+Both files have identical issues with unused state variables:
 
-These fixes should be planned for a future refactoring task and are not blocking the current PR merger. 
+**Issue:**
+```typescript
+const [isLoadingPlayers, setIsLoadingPlayers] = useState(false);
+const [isLoadingResults, setIsLoadingResults] = useState(false);
+const [contestFormMode, setContestFormMode] = useState<'add' | 'edit'>('add');
+const [editingContestId, setEditingContestId] = useState<string | null>(null);
+const [resultFormMode, setResultFormMode] = useState<'add' | 'edit'>('add');
+const [editingResultId, setEditingResultId] = useState<string | null>(null);
+```
+
+**Recommended Fix:**
+Either remove these variables if they're not needed, or prefix them with underscore:
+```typescript
+const [_isLoadingPlayers, setIsLoadingPlayers] = useState(false);
+```
+
+**React Hook Dependency Warning:**
+```typescript
+useEffect(() => {
+  // Effect using contests
+}, []); // Missing 'contests' in dependencies
+```
+
+**Fix:**
+```typescript
+useEffect(() => {
+  // Effect using contests
+}, [contests]); // Add contests to dependencies
+```
+
+#### `components/admin/results/FlightsResultsTab.tsx`
+
+**Issues:**
+- Unused import: `Trash`
+- Unused state: `isLoadingTeams`
+- Unused function: `prepareEditFlight`
+
+**Fixes:**
+- Remove the `Trash` import
+- Prefix `isLoadingTeams` with underscore or remove if not needed
+- Either implement `prepareEditFlight` functionality or remove it
+
+## Implementation Strategy
+
+### Immediate Actions
+1. **Create GitHub Issue:** Create a ticket to track these linting fixes
+2. **Add to Sprint Backlog:** Schedule this cleanup task for an upcoming sprint
+
+### Fix Implementation (Priority Order)
+1. **API Routes (High Priority):**
+   - Create TypeScript interfaces for all API responses and requests
+   - Fix error handling to use proper type narrowing instead of `any`
+
+2. **Component Variables (Medium Priority):**
+   - Remove or prefix unused variables
+   - Clean up unused imports
+
+3. **React Hook Dependencies (Low Priority):**
+   - Add missing dependencies to dependency arrays or restructure effects
+
+### Testing
+After implementing fixes:
+1. Run `npm run lint` to verify all issues are resolved
+2. Ensure all functionality still works as expected
+3. Update the CI workflows to use standard `npm run build` instead of `build:no-lint`
+
+## Future Prevention
+- Consider adding a pre-commit hook to check for linting errors
+- Add ESLint to the CI pipeline as a separate step for early detection
+- Document TypeScript best practices for the team
+
+## Timeline
+These fixes should be completed within the next 2-3 sprints after the Tournament Results UI feature is merged. They are not blocking the current PR merge. 
