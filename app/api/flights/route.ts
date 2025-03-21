@@ -26,7 +26,7 @@ export const GET: RequestHandler = async (request: NextRequest) => {
           f.updated_at
         FROM api.flights f
         JOIN api.tournament_years ty ON f.tournament_year_id = ty.id
-        WHERE f.tournament_year_id = ${tournamentYearId}
+        WHERE f.tournament_year_id = ${tournamentYearId}::uuid
         ORDER BY f.name
       `;
     } else {
@@ -82,7 +82,7 @@ export const POST: RequestHandler = async (request: NextRequest) => {
 
     // Check if tournament year exists
     const tournamentYear = await prisma.$queryRaw<TournamentYear[]>`
-      SELECT id FROM api.tournament_years WHERE id = ${tournamentYearId}
+      SELECT id FROM api.tournament_years WHERE id = ${tournamentYearId}::uuid
     `;
 
     if (!tournamentYear.length) {
@@ -92,7 +92,7 @@ export const POST: RequestHandler = async (request: NextRequest) => {
     // Create new flight
     const flight = await prisma.$queryRaw<Flight[]>`
       INSERT INTO api.flights (name, tournament_year_id, created_at, updated_at)
-      VALUES (${name}, ${tournamentYearId}, NOW(), NOW())
+      VALUES (${name}, ${tournamentYearId}::uuid, NOW(), NOW())
       RETURNING id, name, tournament_year_id, created_at, updated_at
     `;
 
